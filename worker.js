@@ -1,201 +1,33 @@
-<header>
-  <div class="top">
-    <button onclick="goBack()" style="background:#f5c400;color:#000;border:0;border-radius:10px;padding:8px 12px;font-weight:bold">
-      ← رجوع
-    </button>
-    <b>✕ XENOR</b>
-    <span id="me"></span>
-  </div>
-</header>
-{key:'platforms',label:'المنصات'}
-{key:'services',label:'الخدمات'},
-{key:'platforms',label:'المنصات'},
-{key:'profile',label:'حسابي'},
-function goBack(){
-  if(history.length > 1){
-    history.back();
-  }else{
-    go('home');
-  }
-}case 'services': return services();
-case 'platforms': return platforms();
-async function platforms(){
-  app.innerHTML='<div class="card"><h2>المنصات</h2><p>جاري التحميل...</p></div>';
-
-  try{
-    const data=await api('/api/platforms');
-
-    app.innerHTML=`
-      <div class="card">
-        <h2>🌐 منصات XENOR</h2>
-        <p>تابع XENOR على منصات التواصل</p>
-
-        <div id="platformList"></div>
-      </div>
-    `;
-
-    const list=$('#platformList');
-
-    if(!data.length){
-      list.innerHTML='<p>لا توجد منصات مضافة.</p>';
-      return;
-    }
-
-    list.innerHTML=data
-      .filter(x=>x.enabled)
-      .map(x=>`
-        <a href="${esc(x.url)}"
-           target="_blank"
-           rel="noopener"
-           style="
-             display:block;
-             background:#111;
-             color:#fff;
-             padding:15px;
-             margin:10px 0;
-             border-radius:14px;
-             text-decoration:none;
-             border:1px solid #292929;
-           ">
-          <b style="color:#f5c400">${esc(x.name)}</b>
-          <div style="font-size:13px;color:#aaa;margin-top:5px">
-            ${esc(x.description||'تابعنا على المنصة')}
-          </div>
-        </a>
-      `).join('');
-
-  }catch(e){
-    app.innerHTML=`
-      <div class="card">
-        <h2>خطأ</h2>
-        <p>${esc(e.message)}</p>
-      </div>
-    `;
-  }
-}function esc(v){
-  return String(v??'')
-    .replaceAll('&','&amp;')
-    .replaceAll('<','&lt;')
-    .replaceAll('>','&gt;')
-    .replaceAll('"','&quot;')
-    .replaceAll("'","&#039;");
-}return Response.json({error:'Not found'}
-if(path==='/api/platforms' && req.method==='GET'){
-  await run(env,`
-    CREATE TABLE IF NOT EXISTS platforms(
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      name TEXT NOT NULL,
-      url TEXT NOT NULL,
-      description TEXT DEFAULT '',
-      enabled INTEGER DEFAULT 1,
-      created_at TEXT DEFAULT CURRENT_TIMESTAMP
-    )
-  `);
-
-  let rows=await q(env,`
-    SELECT * FROM platforms
-    ORDER BY id ASC
-  `);
-
-  if(!rows.length){
-    const defaults=[
-      ['Facebook','https://facebook.com/','صفحة XENOR على Facebook'],
-      ['Instagram','https://instagram.com/','حساب XENOR على Instagram'],
-      ['TikTok','https://tiktok.com/','حساب XENOR على TikTok'],
-      ['LinkedIn','https://linkedin.com/','XENOR على LinkedIn'],
-      ['Pinterest','https://pinterest.com/','XENOR على Pinterest'],
-      ['YouTube','https://youtube.com/','قناة XENOR على YouTube'],
-      ['X','https://x.com/','XENOR على X'],
-      ['WhatsApp','https://wa.me/','تواصل معنا عبر WhatsApp']
-    ];
-
-    for(const p of defaults){
-      await run(env,`
-        INSERT INTO platforms(name,url,description,enabled)
-        VALUES(?,?,?,1)
-      `,...p);
-    }
-
-    rows=await q(env,`SELECT * FROM platforms ORDER BY id ASC`);
-  }
-
-  return Response.json(rows);
-}if(path==='/api/admin/platforms' && req.method==='GET'){
-  const u=await need(req,env);
-
-  if(u.role!=='admin')
-    return Response.json({error:'Admin only'},{status:403});
-
-  await run(env,`
-    CREATE TABLE IF NOT EXISTS platforms(
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      name TEXT NOT NULL,
-      url TEXT NOT NULL,
-      description TEXT DEFAULT '',
-      enabled INTEGER DEFAULT 1,
-      created_at TEXT DEFAULT CURRENT_TIMESTAMP
-    )
-  `);
-
-  return Response.json(
-    await q(env,`SELECT * FROM platforms ORDER BY id ASC`)
-  );
-}if(path==='/api/admin/platforms' && req.method==='POST'){
-  const u=await need(req,env);
-
-  if(u.role!=='admin')
-    return Response.json({error:'Admin only'},{status:403});
-
-  const b=await req.json();
-
-  if(!b.name || !b.url)
-    return Response.json({error:'name and url required'},{status:400});
-
-  await run(env,`
-    INSERT INTO platforms(name,url,description,enabled)
-    VALUES(?,?,?,?)
-  `,
-    b.name,
-    b.url,
-    b.description||'',
-    b.enabled===false?0:1
-  );
-
-  return Response.json({ok:true});
-}const pm=path.match(/^\/api\/admin\/platforms\/(\d+)$/);
-
-if(pm && req.method==='PUT'){
-  const u=await need(req,env);
-
-  if(u.role!=='admin')
-    return Response.json({error:'Admin only'},{status:403});
-
-  const b=await req.json();
-
-  await run(env,`
-    UPDATE platforms
-    SET name=?,url=?,description=?,enabled=?
-    WHERE id=?
-  `,
-    b.name,
-    b.url,
-    b.description||'',
-    b.enabled?1:0,
-    pm[1]
-  );
-
-  return Response.json({ok:true});
+const H='content-type';
+const json=(x,s=200)=>new Response(JSON.stringify(x),{status:s,headers:{[H]:'application/json;charset=utf-8','cache-control':'no-store'}});
+const html=(x,s=200)=>new Response(x,{status:s,headers:{[H]:'text/html;charset=utf-8','cache-control':'no-store'}});
+const esc=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+function pageCSS(){return `<style>*{box-sizing:border-box}body{margin:0;background:#080808;color:#fff;font-family:Arial,sans-serif;direction:rtl}a{text-decoration:none;color:inherit}.wrap{max-width:1100px;margin:auto;padding:24px}.top{position:sticky;top:0;z-index:5;background:#080808ee;border-bottom:1px solid #222;display:flex;align-items:center;justify-content:space-between;padding:14px 24px}.logo{font-size:25px;font-weight:900}.logo span,h1 span,h2 span{color:#f5c400}.nav{display:flex;gap:10px;flex-wrap:wrap}.nav a,.btn,.ghost,.back{border:1px solid #f5c400;border-radius:10px;padding:10px 14px}.btn{background:#f5c400;color:#080808;font-weight:800;cursor:pointer}.ghost,.back{background:#111;color:#fff}.back{position:fixed;left:14px;bottom:14px;z-index:20;cursor:pointer}.hero{min-height:70vh;display:grid;grid-template-columns:1.5fr .7fr;gap:30px;align-items:center}.eyebrow{color:#f5c400;letter-spacing:3px}.hero h1{font-size:clamp(42px,7vw,78px);margin:10px 0}.hero p{font-size:20px;line-height:1.8;color:#bbb}.mark{font-size:220px;font-weight:900;text-align:center;color:#f5c400}.section{padding:55px 0}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px}.card,.panel{background:#111;border:1px solid #252525;border-radius:16px;padding:20px}.card h3{color:#f5c400}.muted{color:#aaa}.contact{display:grid;grid-template-columns:1fr 1fr;gap:20px}.form{display:grid;gap:10px}input,textarea{width:100%;padding:13px;border:1px solid #333;background:#0c0c0c;color:#fff;border-radius:9px}textarea{min-height:120px}.social{display:flex;gap:8px;flex-wrap:wrap}.msg{color:#f5c400;min-height:20px}footer{border-top:1px solid #222;padding:30px;text-align:center;color:#aaa}.adminmain{max-width:1100px;margin:auto;padding:24px}.item{display:flex;justify-content:space-between;gap:12px;align-items:center;border-top:1px solid #292929;padding:12px 0}.danger{background:#1b0a0a;color:#ff8b8b;border:1px solid #552020;border-radius:8px;padding:8px;cursor:pointer}.tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px}.stat{font-size:28px;color:#f5c400;font-weight:900}@media(max-width:700px){.hero,.contact{grid-template-columns:1fr}.mark{font-size:130px}.nav{display:none}.wrap,.adminmain{padding:16px}}</style>`}
+function appShell(active='home'){
+const items=[['home','الرئيسية','/'],['platforms','المنصات','/platforms'],['reels','Reels','/reels'],['market','السوق','/market'],['academy','الأكاديمية','/academy'],['services','الخدمات','/services'],['messages','الرسائل','/messages'],['notifications','الإشعارات','/notifications']];
+return `<nav class="appnav">${items.map(([k,n,u])=>`<a class="${k===active?'active':''}" href="${u}">${n}</a>`).join('')}<a href="/admin">الإدارة</a></nav>`;
 }
-
-if(pm && req.method==='DELETE'){
-  const u=await need(req,env);
-
-  if(u.role!=='admin')
-    return Response.json({error:'Admin only'},{status:403});
-
-  await run(env,`
-    DELETE FROM platforms WHERE id=?
-  `,pm[1]);
-
-  return Response.json({ok:true});
+function platformPage(){return `<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#f5c400"><title>XENOR — المنصات</title>${pageCSS()}<style>.appnav{position:sticky;top:0;z-index:10;display:flex;gap:8px;overflow:auto;padding:10px 14px;background:#0b0b0bf2;border-bottom:1px solid #252525}.appnav a{white-space:nowrap;padding:10px 13px;border-radius:10px;color:#bbb}.appnav a.active,.appnav a:hover{background:#f5c400;color:#080808;font-weight:800}.platform{min-height:150px;display:flex;flex-direction:column;justify-content:space-between}.platform .ico{font-size:38px}.search{display:flex;gap:8px;margin:15px 0}.search input{flex:1}.mini{font-size:13px;color:#999}</style></head><body>${appShell('platforms')}<button class="back" onclick="history.length>1?history.back():location.href='/'">← رجوع</button><main class="wrap"><section class="section"><p class="eyebrow">XENOR PLATFORMS</p><h1>منصاتك <span>داخل XENOR</span></h1><p class="muted">الوصول السريع إلى المنصات والخدمات، بدون صفحات وهمية.</p><div class="search"><input id="q" placeholder="ابحث في YouTube"><button class="btn" onclick="yt()">بحث</button></div><div class="grid"><a class="card platform" href="https://www.youtube.com/" target="_blank" rel="noopener"><span class="ico">▶️</span><h3>YouTube</h3><p class="muted">فيديو وبحث مباشر.</p></a><a class="card platform" href="https://www.tiktok.com/" target="_blank" rel="noopener"><span class="ico">🎵</span><h3>TikTok</h3><p class="muted">فيديوهات قصيرة.</p></a><a class="card platform" href="https://www.instagram.com/" target="_blank" rel="noopener"><span class="ico">📸</span><h3>Instagram</h3><p class="muted">صور وفيديو وReels.</p></a><a class="card platform" href="https://www.facebook.com/" target="_blank" rel="noopener"><span class="ico">👥</span><h3>Facebook</h3><p class="muted">صفحات ومجتمعات.</p></a><a class="card platform" href="https://x.com/" target="_blank" rel="noopener"><span class="ico">𝕏</span><h3>X</h3><p class="muted">منشورات وأخبار.</p></a><a class="card platform" href="https://web.telegram.org/" target="_blank" rel="noopener"><span class="ico">✈️</span><h3>Telegram</h3><p class="muted">محادثات وقنوات.</p></a><a class="card platform" href="https://web.whatsapp.com/" target="_blank" rel="noopener"><span class="ico">💬</span><h3>WhatsApp</h3><p class="muted">مراسلة مباشرة.</p></a><a class="card platform" href="/reels"><span class="ico">🎬</span><h3>XENOR Reels</h3><p class="muted">قسم الفيديوهات القصيرة داخل XENOR.</p></a></div><p class="mini">ملاحظة: بعض المنصات تمنع التضمين داخل مواقع خارجية، لذلك يتم فتحها عبر رابطها الرسمي.</p></section></main><script>function yt(){const q=document.getElementById('q').value.trim();location.href=q?'https://www.youtube.com/results?search_query='+encodeURIComponent(q):'https://www.youtube.com/'}</script></body></html>`}
+function sectionPage(title,active,body){return `<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#f5c400"><title>XENOR — ${title}</title>${pageCSS()}<style>.appnav{position:sticky;top:0;z-index:10;display:flex;gap:8px;overflow:auto;padding:10px 14px;background:#0b0b0bf2;border-bottom:1px solid #252525}.appnav a{white-space:nowrap;padding:10px 13px;border-radius:10px;color:#bbb}.appnav a.active,.appnav a:hover{background:#f5c400;color:#080808;font-weight:800}</style></head><body>${appShell(active)}<button class="back" onclick="history.length>1?history.back():location.href='/'">← رجوع</button><main class="wrap"><section class="section"><p class="eyebrow">XENOR APP</p><h1>${title} <span>XENOR</span></h1>${body}</section></main><footer>© 2026 XENOR</footer></body></html>`}
+function home(){return `<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#f5c400"><title>XENOR</title>${pageCSS()}</head><body><header class="top"><a class="logo" href="/">XENOR<span>.</span></a><nav class="nav"><a href="#services">الخدمات</a><a href="#projects">أعمالنا</a><a href="#contact">تواصل معنا</a><a href="/admin">الإدارة</a></nav></header>${appShell('home')}<button class="back" onclick="history.length>1?history.back():location.href='/'">← رجوع</button><main class="wrap"><section class="hero"><div><p class="eyebrow">DIGITAL SOLUTIONS</p><h1>نحوّل فكرتك إلى<br><span>حضور رقمي قوي.</span></h1><p>مواقع احترافية، تطبيقات موبايل، سوشيال ميديا وإعلانات ممولة — كل حلولك الرقمية مع XENOR.</p><a class="btn" href="#contact">ابدأ مشروعك</a></div><div class="mark">X</div></section><section id="services" class="section"><h2>خدمات <span>XENOR</span></h2><div id="servicesGrid" class="grid"><article class="card"><h3>تصميم وتطوير المواقع</h3><p class="muted">مواقع سريعة ومتجاوبة واحترافية.</p></article><article class="card"><h3>تطبيقات الموبايل</h3><p class="muted">تطبيقات Android وتجارب رقمية حديثة.</p></article><article class="card"><h3>السوشيال ميديا</h3><p class="muted">إدارة المحتوى وبناء حضور قوي.</p></article><article class="card"><h3>الإعلانات الممولة</h3><p class="muted">حملات تستهدف عملاءك.</p></article></div></section><section id="projects" class="section"><h2>أعمالنا</h2><div id="projectsGrid" class="grid"><article class="card"><h3>مواقع الشركات</h3><p class="muted">حلول ويب احترافية.</p></article><article class="card"><h3>المتاجر الإلكترونية</h3><p class="muted">تجارب بيع رقمية.</p></article><article class="card"><h3>الحملات الرقمية</h3><p class="muted">تصميم وإعلانات وتسويق.</p></article></div></section><section id="contact" class="section contact"><div><h2>خلينا <span>نبدأ</span></h2><p class="muted">ابعت تفاصيل مشروعك وسنتواصل معك.</p><div id="social" class="social"></div></div><form id="contactForm" class="form"><input name="name" placeholder="الاسم" required><input name="phone" placeholder="رقم الهاتف"><input name="email" type="email" placeholder="البريد الإلكتروني"><textarea name="message" placeholder="تفاصيل المشروع"></textarea><button class="btn">إرسال الطلب</button><div id="msg" class="msg"></div></form></section></main><footer>© 2026 XENOR — حلول رقمية تنمو معك.</footer><script>const e=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));async function load(){try{const r=await fetch('/api/public');const d=await r.json();document.getElementById('servicesGrid').innerHTML=(d.services||[]).map(x=>'<article class="card"><h3>'+e(x.title)+'</h3><p class="muted">'+e(x.description)+'</p></article>').join('')||document.getElementById('servicesGrid').innerHTML;document.getElementById('projectsGrid').innerHTML=(d.projects||[]).map(x=>'<article class="card">'+(x.image?'<img src="'+e(x.image)+'" style="width:100%;border-radius:10px">':'')+'<h3>'+e(x.title)+'</h3><p class="muted">'+e(x.description)+'</p></article>').join('')||document.getElementById('projectsGrid').innerHTML;document.getElementById('social').innerHTML=Object.entries(d.settings||{}).filter(([k,v])=>v).map(([k,v])=>'<a class="ghost" target="_blank" rel="noopener" href="'+e(v)+'">'+e(k)+'</a>').join('')}catch(_){} }document.getElementById('contactForm').onsubmit=async x=>{x.preventDefault();const r=await fetch('/contact',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(Object.fromEntries(new FormData(x.target)))});document.getElementById('msg').textContent=r.ok?'تم استلام طلبك بنجاح.':'حدث خطأ، حاول مرة أخرى.';if(r.ok)x.target.reset()};load();</script></body></html>`}
+function admin(){return `<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>XENOR Admin</title>${pageCSS()}</head><body><button class="back" onclick="history.length>1?history.back():location.href='/'">← رجوع</button><div id="login" class="wrap" style="max-width:480px;padding-top:12vh"><div class="panel"><h1>XENOR<span>.</span> ADMIN</h1><form id="lf" class="form"><input id="u" value="admin" placeholder="اسم المستخدم"><input id="p" type="password" placeholder="كلمة المرور"><button class="btn">دخول</button><div id="lm" class="msg"></div></form></div></div><div id="dash" hidden><header class="top"><a class="logo" href="/">XENOR<span>.</span> ADMIN</a><div><a class="ghost" href="/">الرئيسية</a> <button id="lo" class="ghost">خروج</button></div></header><main class="adminmain"><h1>لوحة التحكم</h1><div id="stats" class="grid"></div><section class="panel"><h2>روابط التواصل</h2><form id="sf" class="form"><input name="facebook" placeholder="Facebook"><input name="instagram" placeholder="Instagram"><input name="tiktok" placeholder="TikTok"><input name="linkedin" placeholder="LinkedIn"><input name="pinterest" placeholder="Pinterest"><input name="whatsapp" placeholder="WhatsApp"><button class="btn">حفظ الروابط</button></form></section><section class="panel"><h2>الخدمات</h2><form id="svf" class="form"><input name="title" required placeholder="اسم الخدمة"><input name="description" required placeholder="الوصف"><button class="btn">إضافة خدمة</button></form><div id="sv"></div></section><section class="panel"><h2>المشاريع</h2><form id="prf" class="form"><input name="title" required placeholder="اسم المشروع"><input name="description" required placeholder="الوصف"><input name="image" placeholder="رابط الصورة"><button class="btn">إضافة مشروع</button></form><div id="pr"></div></section><section class="panel"><h2>طلبات العملاء</h2><div id="ld"></div></section></main></div><script>const $=x=>document.querySelector(x),esc=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));async function api(p,o){const r=await fetch(p,o);if(r.status===401)throw Error('unauthorized');const d=await r.json();if(!r.ok)throw Error(d.error||'خطأ');return d}function dash(){ $('#login').hidden=true;$('#dash').hidden=false}async function load(){const d=await api('/api/public');$('#sf').querySelectorAll('input').forEach(i=>i.value=d.settings[i.name]||'');$('#sv').innerHTML=d.services.map(x=>'<div class="item"><span><b>'+esc(x.title)+'</b><br>'+esc(x.description)+'</span><button class="danger" onclick="del(\'/api/services?id='+x.id+'\')">حذف</button></div>').join('');$('#pr').innerHTML=d.projects.map(x=>'<div class="item"><span><b>'+esc(x.title)+'</b><br>'+esc(x.description)+'</span><button class="danger" onclick="del(\'/api/projects?id='+x.id+'\')">حذف</button></div>').join('');const l=await api('/api/leads');$('#ld').innerHTML=(l.results||[]).map(x=>'<div class="item"><span><b>'+esc(x.name)+'</b><br>'+esc(x.phone)+' '+esc(x.email)+'<br>'+esc(x.message)+'<br><small>'+esc(x.created_at)+'</small></span><button class="danger" onclick="del(\'/api/leads?id='+x.id+'\')">حذف</button></div>').join('')||'<p class="muted">لا توجد طلبات.</p>';$('#stats').innerHTML='<div class="card"><div class="stat">'+d.services.length+'</div>خدمة</div><div class="card"><div class="stat">'+d.projects.length+'</div>مشروع</div><div class="card"><div class="stat">'+(l.results||[]).length+'</div>طلب</div>'}async function del(p){if(confirm('تأكيد الحذف؟')){await api(p,{method:'DELETE'});load()}}$('#lf').onsubmit=async e=>{e.preventDefault();try{await api('/api/login',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({username:$('#u').value,password:$('#p').value})});dash();load()}catch(x){$('#lm').textContent=x.message==='unauthorized'?'بيانات الدخول غير صحيحة':x.message}};$('#lo').onclick=async()=>{await fetch('/api/logout',{method:'POST'});location.reload()};$('#sf').onsubmit=async e=>{e.preventDefault();await api('/api/settings',{method:'PUT',headers:{'content-type':'application/json'},body:JSON.stringify(Object.fromEntries(new FormData(e.target)))});alert('تم الحفظ')};$('#svf').onsubmit=async e=>{e.preventDefault();await api('/api/services',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(Object.fromEntries(new FormData(e.target)))});e.target.reset();load()};$('#prf').onsubmit=async e=>{e.preventDefault();await api('/api/projects',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(Object.fromEntries(new FormData(e.target)))});e.target.reset();load()};api('/api/me').then(()=>{dash();load()}).catch(()=>{});</script></body></html>`}
+async function seed(env){
+await env.DB.prepare("CREATE TABLE IF NOT EXISTS services (id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT NOT NULL, description TEXT NOT NULL, created_at TEXT DEFAULT CURRENT_TIMESTAMP)").run();
+await env.DB.prepare("CREATE TABLE IF NOT EXISTS projects (id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT NOT NULL, description TEXT NOT NULL, image TEXT DEFAULT '', created_at TEXT DEFAULT CURRENT_TIMESTAMP)").run();
+await env.DB.prepare("CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT NOT NULL DEFAULT '')").run();
+await env.DB.prepare("CREATE TABLE IF NOT EXISTS leads (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, phone TEXT DEFAULT '', email TEXT DEFAULT '', message TEXT DEFAULT '', created_at TEXT DEFAULT CURRENT_TIMESTAMP)").run();
+const n=await env.DB.prepare("SELECT COUNT(*) c FROM services").first();
+if(!n||Number(n.c)===0){const rows=[['تصميم وتطوير المواقع','مواقع احترافية سريعة ومتجاوبة.'],['تطبيقات الموبايل','تطبيقات Android وتجارب رقمية حديثة.'],['السوشيال ميديا','إدارة المحتوى وبناء حضور قوي.'],['الإعلانات الممولة','حملات رقمية للوصول إلى العملاء.'],['الهوية والتصميم','هوية بصرية وتصميمات تسويقية.'],['الحلول الرقمية','أتمتة وربط الأدوات والمنصات.']];for(const x of rows){await env.DB.prepare("INSERT INTO services(title,description) VALUES(?,?)").bind(x[0],x[1]).run();}}
+const p=await env.DB.prepare("SELECT COUNT(*) c FROM projects").first();
+if(!p||Number(p.c)===0){const rows=[['مواقع الشركات','مواقع احترافية للشركات والأعمال.'],['المتاجر الإلكترونية','متاجر وتجارب بيع رقمية.'],['الحملات الرقمية','تصميم وإعلانات وتسويق رقمي.']];for(const x of rows){await env.DB.prepare("INSERT INTO projects(title,description) VALUES(?,?)").bind(x[0],x[1]).run();}}
 }
+async function auth(env,request){const c=request.headers.get('Cookie')||'';const m=c.match(/xenor_session=([^;]+)/);return !!m&&m[1]}
+async function api(request,env){const u=new URL(request.url);if(u.pathname==='/api/login'&&request.method==='POST'){const b=await request.json();if(b.username===env.ADMIN_USER&&b.password===env.ADMIN_PASSWORD)return new Response(JSON.stringify({ok:true}),{headers:{'content-type':'application/json','set-cookie':'xenor_session=ok; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=43200'}});return json({error:'بيانات الدخول غير صحيحة'},401)}if(u.pathname==='/api/logout')return new Response('',{status:204,headers:{'set-cookie':'xenor_session=; Path=/; Max-Age=0'}});if(u.pathname==='/api/public'){await seed(env);const [s,p,g]=await Promise.all([env.DB.prepare('SELECT * FROM services ORDER BY id DESC').all(),env.DB.prepare('SELECT * FROM projects ORDER BY id DESC').all(),env.DB.prepare('SELECT key,value FROM settings').all()]);return json({services:s.results,projects:p.results,settings:Object.fromEntries(g.results.map(x=>[x.key,x.value]))})}if(!(await auth(env,request)))return json({error:'غير مصرح'},401);if(u.pathname==='/api/me')return json({ok:true});if(u.pathname==='/api/leads')return request.method==='GET'?json(await env.DB.prepare('SELECT * FROM leads ORDER BY id DESC').all()):(await env.DB.prepare('DELETE FROM leads WHERE id=?').bind(u.searchParams.get('id')).run(),json({ok:true}));if(u.pathname==='/api/settings'&&request.method==='PUT'){const b=await request.json();for(const [k,v] of Object.entries(b))await env.DB.prepare('INSERT INTO settings(key,value) VALUES(?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value').bind(k,String(v||'')).run();return json({ok:true})}if(u.pathname==='/api/services'){if(request.method==='POST'){const b=await request.json();await env.DB.prepare('INSERT INTO services(title,description) VALUES(?,?)').bind(b.title,b.description).run();return json({ok:true})}await env.DB.prepare('DELETE FROM services WHERE id=?').bind(u.searchParams.get('id')).run();return json({ok:true})}if(u.pathname==='/api/projects'){if(request.method==='POST'){const b=await request.json();await env.DB.prepare('INSERT INTO projects(title,description,image) VALUES(?,?,?)').bind(b.title,b.description,b.image||'').run();return json({ok:true})}await env.DB.prepare('DELETE FROM projects WHERE id=?').bind(u.searchParams.get('id')).run();return json({ok:true})}return json({error:'Not found'},404)}
+export default {async fetch(request,env){const u=new URL(request.url);try{await seed(env);if(u.pathname.startsWith('/api/'))return await api(request,env);if(u.pathname==='/contact'&&request.method==='POST'){const b=await request.json();if(!b.name)return json({error:'الاسم مطلوب'},400);await env.DB.prepare('INSERT INTO leads(name,phone,email,message) VALUES(?,?,?,?)').bind(b.name,b.phone||'',b.email||'',b.message||'').run();return json({ok:true})}if(u.pathname==='/platforms')return html(platformPage());
+if(u.pathname==='/reels')return html(sectionPage('Reels','reels','<div class="grid"><article class="card"><h3>🎬 فيديوهات XENOR</h3><p class="muted">قسم جاهز لإضافة الفيديوهات القصيرة من لوحة الإدارة في المرحلة التالية.</p><a class="btn" href="/platforms">استكشف المنصات</a></article></div>'));
+if(u.pathname==='/market')return html(sectionPage('السوق','market','<div class="grid"><article class="card"><h3>🛒 Marketplace</h3><p class="muted">مكان المنتجات والخدمات. البيانات المركزية يمكن إدارتها من D1.</p><a class="btn" href="/admin">إدارة السوق</a></article></div>'));
+if(u.pathname==='/academy')return html(sectionPage('الأكاديمية','academy','<div class="grid"><article class="card"><h3>🎓 XENOR Academy</h3><p class="muted">دروس وكورسات ومحتوى تعليمي.</p><a class="btn" href="/contact#academy">اطلب كورس</a></article></div>'));
+if(u.pathname==='/services')return html(sectionPage('الخدمات','services','<div id="sg" class="grid"><article class="card"><h3>جارٍ التحميل...</h3></article></div><script>fetch('/api/public').then(r=>r.json()).then(d=>sg.innerHTML=d.services.map(x=>`<article class=\"card\"><h3>${x.title}</h3><p class=\"muted\">${x.description}</p></article>`).join(''))</script>'));
+if(u.pathname==='/messages')return html(sectionPage('الرسائل','messages','<div class="card"><h3>💬 الرسائل</h3><p class="muted">واجهة الرسائل جاهزة، وسيتم ربط الحسابات والمحادثات الفورية بقاعدة البيانات في المرحلة التالية.</p><a class="btn" href="/contact">ابدأ محادثة</a></div>'));
+if(u.pathname==='/notifications')return html(sectionPage('الإشعارات','notifications','<div class="card"><h3>🔔 الإشعارات</h3><p class="muted">ستظهر هنا إشعارات الحساب والطلبات والرسائل.</p></div>'));
+if(u.pathname==='/admin'||u.pathname==='/admin.html')return html(admin());return html(home())}catch(e){return json({error:e.message},500)}}};
