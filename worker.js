@@ -1,64 +1,201 @@
-const html = `<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#f5c400"><title>XENOR</title><link rel="manifest" href="/manifest.json"><style>
-*{box-sizing:border-box}body{margin:0;background:#080808;color:#fff;font-family:Arial,sans-serif}header{position:sticky;top:0;z-index:5;background:#111;border-bottom:2px solid #f5c400;padding:14px}header b{font-size:22px}main{max-width:1050px;margin:auto;padding:14px 14px 90px}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px}.card{background:#151515;border:1px solid #292929;border-radius:16px;padding:15px;margin:10px 0}button{background:#f5c400;color:#080808;border:0;border-radius:10px;padding:10px 14px;font-weight:700;cursor:pointer}button.alt{background:#292929;color:#fff}button.danger{background:#b91c1c;color:#fff}input,textarea,select{width:100%;background:#090909;color:#fff;border:1px solid #444;border-radius:10px;padding:11px;margin:5px 0}textarea{min-height:90px}.nav{display:flex;gap:7px;overflow:auto;margin:10px 0}.nav button{white-space:nowrap}.muted{color:#aaa}.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.pill{display:inline-block;border:1px solid #555;border-radius:99px;padding:4px 8px;color:#ddd}.media{max-width:100%;max-height:430px;border-radius:12px;margin-top:8px}.item{border-top:1px solid #292929;padding:12px 0}.hidden{display:none}.stat{font-size:25px;font-weight:bold;color:#f5c400}.top{display:flex;justify-content:space-between;align-items:center;gap:10px}.small{font-size:12px;color:#aaa}a{color:#f5c400}</style></head><body><header><div class="top"><b>✕ XENOR</b><span id="me"></span></div></header><main><div id="nav" class="nav"></div><div id="app"></div></main><script>
-const $=s=>document.querySelector(s), api=async(path,opt={})=>{const r=await fetch('/api'+path,{credentials:'include',...opt,headers:{'content-type':'application/json',...(opt.headers||{})}});let j={};try{j=await r.json()}catch{}if(!r.ok)throw Error(j.error||'حدث خطأ');return j};let state={user:null};
-const esc=x=>String(x??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
-function nav(){let n=[['home','الرئيسية'],['feed','المنشورات'],['friends','الأصدقاء'],['messages','الرسائل'],['stories','Stories'],['reels','Reels'],['market','السوق'],['academy','الأكاديمية'],['services','الخدمات'],['profile','حسابي'],['notifications','الإشعارات']];if(state.user?.role==='admin')n.push(['admin','الإدارة']);$('nav').innerHTML=n.map(x=>\`<button onclick="go('\${x[0]}')">\${x[1]}</button>\`).join('')}
-function go(x){location.hash=x}async function boot(){try{state.user=(await api('/me')).user}catch{}nav();$('#me').innerHTML=state.user?\`👤 \${esc(state.user.name)} <button class="alt" onclick="logout()">خروج</button>\`:'زائر';render()}async function logout(){await api('/logout',{method:'POST'});state.user=null;boot()}
-function render(){let p=location.hash.slice(1)||'home';if(p==='home')home();else if(p==='feed')feed();else if(p==='friends')friends();else if(p==='messages')messages();else if(p==='stories')stories();else if(p==='reels')reels();else if(p==='market')market();else if(p==='academy')academy();else if(p==='services')services();else if(p==='profile')profile();else if(p==='notifications')notifications();else if(p==='admin')admin();else home()}
-function authBox(){return \`<div class="card"><h2>تسجيل الدخول / إنشاء حساب</h2><input id="name" placeholder="الاسم (للتسجيل)"><input id="email" placeholder="البريد الإلكتروني"><input id="pass" type="password" placeholder="كلمة المرور"><div class="row"><button onclick="register()">إنشاء حساب</button><button class="alt" onclick="login()">دخول</button></div></div>\`}
-async function register(){try{await api('/register',{method:'POST',body:JSON.stringify({name:$('#name').value,email:$('#email').value,password:$('#pass').value})});await boot()}catch(e){alert(e.message)}}async function login(){try{await api('/login',{method:'POST',body:JSON.stringify({email:$('#email').value,password:$('#pass').value})});await boot()}catch(e){alert(e.message)}}
-function home(){if(!state.user){$('#app').innerHTML=\`<div class="card"><h1>XENOR Social Hub</h1><p>منصة اجتماعية كاملة: أصدقاء، منشورات، رسائل، Stories، Reels، سوق، أكاديمية وخدمات.</p></div>\${authBox()}\`;return}$('#app').innerHTML=\`<div class="card"><h1>أهلاً \${esc(state.user.name)} 👋</h1><p class="muted">ابدأ من أي قسم بالأعلى.</p></div><div class="grid"><div class="card"><div class="stat">🤝</div><b>الأصدقاء</b><p>طلبات وقائمة الأصدقاء.</p><button onclick="go('friends')">فتح</button></div><div class="card"><div class="stat">💬</div><b>الرسائل</b><p>محادثات مباشرة.</p><button onclick="go('messages')">فتح</button></div><div class="card"><div class="stat">🛍️</div><b>السوق</b><p>منتجات وعروض.</p><button onclick="go('market')">فتح</button></div><div class="card"><div class="stat">🧑‍🏫</div><b>الخدمات</b><p>خدمات وطلبات.</p><button onclick="go('services')">فتح</button></div></div>\`}
-async function feed(){if(!state.user){$('#app').innerHTML=authBox();return}let d=await api('/posts');$('#app').innerHTML=\`<div class="card"><h2>المنشورات</h2><textarea id="pt" placeholder="اكتب منشورك..."></textarea><input id="pm" placeholder="رابط صورة/فيديو اختياري"><select id="pmt"><option value="">بدون وسائط</option><option value="image">صورة</option><option value="video">فيديو</option></select><button onclick="createPost()">نشر</button></div><div id="posts">\${d.posts.map(postCard).join('')||'<div class="card">لا توجد منشورات.</div>'}</div>\`}
-function postCard(p){return \`<div class="card"><div class="top"><b>\${esc(p.author_name)}</b><span class="small">\${esc(p.created_at)}</span></div><p>\${esc(p.text)}</p>\${p.media_url?(p.media_type==='video'?\`<video class="media" controls src="\${esc(p.media_url)}"></video>\`:\`<img class="media" src="\${esc(p.media_url)}">\`):''}<div class="row"><button class="alt" onclick="like('\${p.id}')">❤️ \${p.likes}</button><button class="alt" onclick="comment('\${p.id}')">💬 \${p.comments}</button><button class="alt" onclick="share('\${p.id}')">↗ مشاركة</button><button class="danger" onclick="reportItem('post','\${p.id}')">🚨 بلاغ</button></div></div>\`}
-async function createPost(){try{await api('/posts',{method:'POST',body:JSON.stringify({text:$('#pt').value,media_url:$('#pm').value,media_type:$('#pmt').value})});feed()}catch(e){alert(e.message)}}async function like(id){try{await api('/posts/'+id+'/like',{method:'POST'});feed()}catch(e){alert(e.message)}}async function comment(id){let t=prompt('التعليق:');if(t){try{await api('/posts/'+id+'/comments',{method:'POST',body:JSON.stringify({text:t})});feed()}catch(e){alert(e.message)}}}function share(id){navigator.clipboard?.writeText(location.origin+'/#feed?post='+id);alert('تم نسخ رابط المشاركة')}
-async function friends(){if(!state.user){$('#app').innerHTML=authBox();return}let d=await api('/friends');$('#app').innerHTML=\`<div class="card"><h2>العثور على مستخدمين</h2><input id="fq" placeholder="اسم أو بريد"><button onclick="searchUsers()">بحث</button><div id="users"></div></div><div class="grid"><div class="card"><h3>طلبات واردة</h3>\${d.incoming.map(f=>\`<div class="item"><b>\${esc(f.name)}</b><div class="row"><button onclick="friendAction('\${f.id}','accept')">قبول</button><button class="danger" onclick="friendAction('\${f.id}','reject')">رفض</button></div></div>\`).join('')||'<p class="muted">لا يوجد.</p>'}</div><div class="card"><h3>الأصدقاء</h3>\${d.friends.map(f=>\`<div class="item">👤 \${esc(f.name)} <span class="pill">\${f.online?'متصل':'غير متصل'}</span></div>\`).join('')||'<p class="muted">لا يوجد.</p>'}</div></div>\`}
-async function searchUsers(){let d=await api('/users?q='+encodeURIComponent($('#fq').value));$('#users').innerHTML=d.users.map(u=>\`<div class="item"><b>\${esc(u.name)}</b> <span class="small">\${esc(u.email)}</span><button onclick="friendAction('\${u.id}','send')">إضافة صديق</button><button class="alt" onclick="follow('\${u.id}')">متابعة</button><button class="danger" onclick="blockUser('\${u.id}')">حظر</button></div>\`).join('')||'لا نتائج'}async function friendAction(id,a){try{await api('/friends/'+id+'/'+a,{method:'POST'});friends()}catch(e){alert(e.message)}}async function follow(id){try{await api('/follow/'+id,{method:'POST'});alert('تم تحديث المتابعة')}catch(e){alert(e.message)}}async function blockUser(id){if(confirm('حظر المستخدم؟')){await api('/block/'+id,{method:'POST'});friends()}}
-async function messages(){if(!state.user){$('#app').innerHTML=authBox();return}let d=await api('/conversations');$('#app').innerHTML=\`<div class="card"><h2>رسالة جديدة</h2><input id="to" placeholder="بريد المستلم"><textarea id="mt" placeholder="الرسالة"></textarea><button onclick="sendMsg()">إرسال</button></div><div class="card"><h2>الرسائل</h2>\${d.messages.map(m=>\`<div class="item"><b>\${esc(m.sender_name)}</b> → \${esc(m.receiver_name)}<p>\${esc(m.text)}</p><span class="small">\${esc(m.created_at)}</span></div>\`).join('')||'لا توجد رسائل.'}</div>\`}async function sendMsg(){try{await api('/messages',{method:'POST',body:JSON.stringify({email:$('#to').value,text:$('#mt').value})});messages()}catch(e){alert(e.message)}}
-async function stories(){if(!state.user){$('#app').innerHTML=authBox();return}let d=await api('/stories');$('#app').innerHTML=\`<div class="card"><h2>Stories</h2><input id="su" placeholder="رابط الصورة/الفيديو"><select id="st"><option value="image">صورة</option><option value="video">فيديو</option></select><button onclick="addStory()">نشر Story</button></div><div class="grid">\${d.stories.map(s=>\`<div class="card"><b>\${esc(s.author_name)}</b>\${s.media_type==='video'?\`<video class="media" controls src="\${esc(s.media_url)}"></video>\`:\`<img class="media" src="\${esc(s.media_url)}">\`}</div>\`).join('')||'<div class="card">لا توجد Stories حالياً.</div>'}</div>\`}async function addStory(){try{await api('/stories',{method:'POST',body:JSON.stringify({media_url:$('#su').value,media_type:$('#st').value})});stories()}catch(e){alert(e.message)}}
-async function reels(){if(!state.user){$('#app').innerHTML=authBox();return}let d=await api('/reels');$('#app').innerHTML=\`<div class="card"><h2>Reels</h2><input id="rv" placeholder="رابط الفيديو"><input id="rc" placeholder="الوصف"><button onclick="addReel()">نشر Reel</button></div>\${d.reels.map(r=>\`<div class="card"><b>\${esc(r.author_name)}</b><video class="media" controls src="\${esc(r.video_url)}"></video><p>\${esc(r.caption)}</p></div>\`).join('')||'<div class="card">لا توجد Reels.</div>'}\`}async function addReel(){try{await api('/reels',{method:'POST',body:JSON.stringify({video_url:$('#rv').value,caption:$('#rc').value})});reels()}catch(e){alert(e.message)}}
-async function market(){let d=await api('/market');$('#app').innerHTML=\`<div class="card"><h2>السوق</h2>\${state.user?'<input id="pr" placeholder="اسم المنتج"><textarea id="pd" placeholder="الوصف"></textarea><input id="pp" type="number" placeholder="السعر"><input id="pi" placeholder="رابط الصورة"><button onclick="addProduct()">إضافة منتج</button>':''}</div><div class="grid">\${d.products.map(p=>\`<div class="card">\${p.image_url?\`<img class="media" src="\${esc(p.image_url)}">\`:''}<h3>\${esc(p.title)}</h3><p>\${esc(p.description)}</p><b>\${p.price} جنيه</b></div>\`).join('')||'<div class="card">لا توجد منتجات.</div>'}</div>\`}async function addProduct(){try{await api('/market',{method:'POST',body:JSON.stringify({title:$('#pr').value,description:$('#pd').value,price:+$('#pp').value,image_url:$('#pi').value})});market()}catch(e){alert(e.message)}}
-async function academy(){let d=await api('/academy');$('#app').innerHTML=\`<div class="card"><h2>الأكاديمية</h2>\${state.user?'<input id="at" placeholder="عنوان الدرس"><textarea id="ad" placeholder="الوصف"></textarea><input id="au" placeholder="رابط الدرس"><button onclick="addAcademy()">إضافة</button>':''}</div>\${d.items.map(x=>\`<div class="card"><h3>\${esc(x.title)}</h3><p>\${esc(x.description)}</p>\${x.url?\`<a target="_blank" href="\${esc(x.url)}">فتح الدرس</a>\`:''}</div>\`).join('')||'<div class="card">لا توجد مواد.</div>'}\`}async function addAcademy(){try{await api('/academy',{method:'POST',body:JSON.stringify({title:$('#at').value,description:$('#ad').value,url:$('#au').value})});academy()}catch(e){alert(e.message)}}
-async function services(){let d=await api('/services');$('#app').innerHTML=\`<div class="card"><h2>الخدمات والطلبات</h2>\${state.user?'<input id="svt" placeholder="اسم الخدمة"><textarea id="svd" placeholder="الوصف"></textarea><input id="svp" type="number" placeholder="السعر"><button onclick="addService()">إضافة خدمة</button>':''}</div><div class="grid">\${d.services.map(s=>\`<div class="card"><h3>\${esc(s.title)}</h3><p>\${esc(s.description)}</p><b>\${s.price} جنيه</b><br><button onclick="orderService('\${s.id}')">طلب الخدمة</button></div>\`).join('')||'<div class="card">لا توجد خدمات.</div>'}</div><div class="card"><h3>طلباتي</h3>\${d.orders.map(o=>\`<div class="item">\${esc(o.title)} — <span class="pill">\${esc(o.status)}</span></div>\`).join('')||'لا توجد طلبات.'}</div>\`}async function addService(){try{await api('/services',{method:'POST',body:JSON.stringify({title:$('#svt').value,description:$('#svd').value,price:+$('#svp').value})});services()}catch(e){alert(e.message)}}async function orderService(id){try{await api('/orders',{method:'POST',body:JSON.stringify({service_id:id,note:''})});alert('تم إرسال الطلب');services()}catch(e){alert(e.message)}}
-async function notifications(){if(!state.user){$('#app').innerHTML=authBox();return}let d=await api('/notifications');$('#app').innerHTML='<div class="card"><h2>الإشعارات</h2><button onclick="api(\'/notifications/read\',{method:\'POST\'}).then(notifications)">تحديد الكل كمقروء</button>'+(d.notifications.map(n=>'<div class="item"><b>'+esc(n.type)+'</b><p>'+esc(n.body)+'</p><span class="small">'+esc(n.created_at)+'</span></div>').join('')||'<p class="muted">لا توجد إشعارات.</p>')+'</div>'}async function reportItem(type,id){const reason=prompt('سبب البلاغ:');if(reason){try{await api('/reports',{method:'POST',body:JSON.stringify({target_type:type,target_id:id,reason})});alert('تم إرسال البلاغ')}catch(e){alert(e.message)}}}
-async function profile(){if(!state.user){$('#app').innerHTML=authBox();return}let d=await api('/profile');$('#app').innerHTML=\`<div class="card"><h2>حسابي</h2><input id="pn" value="\${esc(d.user.name)}"><input id="pa" value="\${esc(d.user.avatar||'')}" placeholder="رابط الصورة"><textarea id="pb" placeholder="نبذة">\${esc(d.user.bio||'')}</textarea><button onclick="saveProfile()">حفظ</button></div>\`}async function saveProfile(){try{await api('/profile',{method:'PUT',body:JSON.stringify({name:$('#pn').value,avatar:$('#pa').value,bio:$('#pb').value})});boot()}catch(e){alert(e.message)}}
-async function admin(){if(state.user?.role!=='admin'){go('home');return}let d=await api('/admin');$('#app').innerHTML=\`<div class="grid"><div class="card"><div class="stat">\${d.stats.users}</div>مستخدمون</div><div class="card"><div class="stat">\${d.stats.posts}</div>منشورات</div><div class="card"><div class="stat">\${d.stats.orders}</div>طلبات</div><div class="card"><div class="stat">\${d.stats.reports}</div>بلاغات</div></div><div class="card"><h2>البلاغات</h2>\${d.reports.map(r=>\`<div class="item"><b>\${esc(r.reporter_name)}</b> → \${esc(r.target_type)} \${esc(r.target_id)}<p>\${esc(r.reason)}</p><button onclick="closeReport('\${r.id}')">إغلاق</button></div>\`).join('')||'لا توجد بلاغات.'}</div>\`}async function closeReport(id){await api('/admin/reports/'+id,{method:'POST'});admin()}
-if('serviceWorker' in navigator)navigator.serviceWorker.register('/sw.js').catch(()=>{});addEventListener('hashchange',render);boot();
-</script></main></body></html>`;
+<header>
+  <div class="top">
+    <button onclick="goBack()" style="background:#f5c400;color:#000;border:0;border-radius:10px;padding:8px 12px;font-weight:bold">
+      ← رجوع
+    </button>
+    <b>✕ XENOR</b>
+    <span id="me"></span>
+  </div>
+</header>
+{key:'platforms',label:'المنصات'}
+{key:'services',label:'الخدمات'},
+{key:'platforms',label:'المنصات'},
+{key:'profile',label:'حسابي'},
+function goBack(){
+  if(history.length > 1){
+    history.back();
+  }else{
+    go('home');
+  }
+}case 'services': return services();
+case 'platforms': return platforms();
+async function platforms(){
+  app.innerHTML='<div class="card"><h2>المنصات</h2><p>جاري التحميل...</p></div>';
 
-const now=()=>new Date().toISOString(), id=()=>crypto.randomUUID();
-async function q(env,sql,...args){if(!env.DB)throw Error('D1 غير مربوط. اربط قاعدة D1 باسم DB.');return env.DB.prepare(sql).bind(...args).all()}
-async function one(env,sql,...args){if(!env.DB)throw Error('D1 غير مربوط.');return env.DB.prepare(sql).bind(...args).first()}
-async function run(env,sql,...args){if(!env.DB)throw Error('D1 غير مربوط.');return env.DB.prepare(sql).bind(...args).run()}
-async function hash(p){const b=new TextEncoder().encode(p),s=crypto.getRandomValues(new Uint8Array(16));const k=await crypto.subtle.importKey('raw',b,'PBKDF2',false,['deriveBits']);const bits=await crypto.subtle.deriveBits({name:'PBKDF2',salt:s,iterations:120000,hash:'SHA-256'},k,256);return b64(s)+'$'+b64(new Uint8Array(bits))}async function verify(p,v){try{const [ss,hh]=v.split('$'),s=from64(ss),b=new TextEncoder().encode(p),k=await crypto.subtle.importKey('raw',b,'PBKDF2',false,['deriveBits']);const bits=await crypto.subtle.deriveBits({name:'PBKDF2',salt:s,iterations:120000,hash:'SHA-256'},k,256);return b64(new Uint8Array(bits))===hh}catch{return false}}function b64(a){return btoa(String.fromCharCode(...a)).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'')}function from64(s){s=s.replace(/-/g,'+').replace(/_/g,'/');while(s.length%4)s+='=';return Uint8Array.from(atob(s),c=>c.charCodeAt(0))}
-function cookie(t){return `sid=${t}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=2592000`}async function me(req,env){const m=(req.headers.get('Cookie')||'').match(/(?:^|; )sid=([^;]+)/);if(!m)return null;const s=await one(env,'SELECT u.* FROM sessions s JOIN users u ON u.id=s.user_id WHERE s.token=? AND s.expires_at>?',m[1],now());return s||null}function out(data,status=200,extra={}){return Response.json(data,{status,headers:extra})}
-async function need(req,env){const u=await me(req,env);if(!u)throw Object.assign(Error('يجب تسجيل الدخول'),{status:401});return u}
-async function notify(env,user,type,body){await run(env,'INSERT INTO notifications(id,user_id,type,body,created_at) VALUES(?,?,?,?,?)',id(),user,type,body,now())}
-async function api(req,env){const u=new URL(req.url),p=u.pathname,method=req.method;try{
-if(p==='/api/health')return out({ok:true,service:'XENOR',database:!!env.DB});
-if(p==='/api/register'&&method==='POST'){const b=await req.json();if(!b.name||!b.email||!b.password||b.password.length<6)throw Error('أدخل الاسم والبريد وكلمة مرور 6 أحرف على الأقل');if(await one(env,'SELECT id FROM users WHERE email=?',b.email.toLowerCase()))throw Error('البريد مستخدم بالفعل');const uid=id();await run(env,'INSERT INTO users(id,email,name,password_hash,created_at) VALUES(?,?,?,?,?)',uid,b.email.toLowerCase(),b.name.trim(),await hash(b.password),now());const tok=id()+id();await run(env,'INSERT INTO sessions(token,user_id,expires_at) VALUES(?,?,?)',tok,uid,new Date(Date.now()+2592000000).toISOString());return out({ok:true,user:{id:uid,name:b.name,email:b.email,role:'user'}},201,{ 'Set-Cookie':cookie(tok) })}
-if(p==='/api/login'&&method==='POST'){const b=await req.json(),u=await one(env,'SELECT * FROM users WHERE email=?',String(b.email).toLowerCase());if(!u||!(await verify(b.password,u.password_hash)))throw Error('بيانات الدخول غير صحيحة');await run(env,'UPDATE users SET online=1 WHERE id=?',u.id);const tok=id()+id();await run(env,'INSERT INTO sessions(token,user_id,expires_at) VALUES(?,?,?)',tok,u.id,new Date(Date.now()+2592000000).toISOString());return out({ok:true,user:{id:u.id,name:u.name,email:u.email,role:u.role}},200,{'Set-Cookie':cookie(tok)})}
-if(p==='/api/logout'){const m=(req.headers.get('Cookie')||'').match(/(?:^|; )sid=([^;]+)/);if(m){const u=await me(req,env);if(u)await run(env,'UPDATE users SET online=0 WHERE id=?',u.id);await run(env,'DELETE FROM sessions WHERE token=?',m[1])}return new Response(JSON.stringify({ok:true}),{status:200,headers:{'content-type':'application/json','Set-Cookie':'sid=; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=0'}})}
-if(p==='/api/me'){const u=await me(req,env);return out({user:u?{id:u.id,name:u.name,email:u.email,role:u.role,avatar:u.avatar,bio:u.bio,online:u.online}:null})}
-if(p==='/api/users'){const u=await need(req,env),term='%'+String(new URL(req.url).searchParams.get('q')||'')+'%';const r=await q(env,'SELECT id,name,email,avatar,online FROM users WHERE id<>? AND (name LIKE ? OR email LIKE ?) AND id NOT IN (SELECT blocked_id FROM blocks WHERE blocker_id=?) LIMIT 30',u.id,term,term,u.id);return out({users:r.results})}
-if(p==='/api/profile'&&method==='GET'){const u=await need(req,env);return out({user:u})}if(p==='/api/profile'&&method==='PUT'){const u=await need(req,env),b=await req.json();await run(env,'UPDATE users SET name=?,avatar=?,bio=? WHERE id=?',String(b.name||u.name).slice(0,80),String(b.avatar||'').slice(0,1000),String(b.bio||'').slice(0,2000),u.id);return out({ok:true})}
-if(p==='/api/posts'&&method==='GET'){const u=await me(req,env);const r=await q(env,'SELECT p.*,u.name author_name,(SELECT COUNT(*) FROM likes l WHERE l.post_id=p.id) likes,(SELECT COUNT(*) FROM comments c WHERE c.post_id=p.id) comments FROM posts p JOIN users u ON u.id=p.user_id WHERE NOT EXISTS(SELECT 1 FROM blocks b WHERE b.blocker_id=? AND b.blocked_id=p.user_id) ORDER BY p.created_at DESC LIMIT 100',u?.id||'');return out({posts:r.results})}if(p==='/api/posts'&&method==='POST'){const u=await need(req,env),b=await req.json();const pid=id();await run(env,'INSERT INTO posts(id,user_id,text,media_url,media_type,created_at) VALUES(?,?,?,?,?,?)',pid,u.id,String(b.text||'').slice(0,5000),String(b.media_url||'').slice(0,2000),String(b.media_type||''),now());return out({ok:true,id:pid},201)}
-let m=p.match(/^\/api\/posts\/([^/]+)\/(like|comments)$/);if(m&&method==='POST'){const u=await need(req,env);if(m[2]==='like'){const x=await one(env,'SELECT id FROM likes WHERE post_id=? AND user_id=?',m[1],u.id);if(x)await run(env,'DELETE FROM likes WHERE id=?',x.id);else await run(env,'INSERT INTO likes(id,post_id,user_id,created_at) VALUES(?,?,?,?)',id(),m[1],u.id,now());return out({ok:true})}const b=await req.json();await run(env,'INSERT INTO comments(id,post_id,user_id,text,created_at) VALUES(?,?,?,?,?)',id(),m[1],u.id,String(b.text||'').slice(0,1000),now());return out({ok:true})}
-if(p==='/api/friends'){const u=await need(req,env);const incoming=(await q(env,'SELECT f.id,u.id user_id,u.name,u.email,u.avatar,u.online FROM friendships f JOIN users u ON u.id=f.sender_id WHERE f.receiver_id=? AND f.status="pending" ORDER BY f.created_at DESC',u.id)).results;const outgoing=(await q(env,'SELECT f.id,u.id user_id,u.name,u.email,u.avatar,u.online FROM friendships f JOIN users u ON u.id=f.receiver_id WHERE f.sender_id=? AND f.status="pending" ORDER BY f.created_at DESC',u.id)).results;const friends=(await q(env,'SELECT u.id,u.name,u.avatar,u.online FROM friendships f JOIN users u ON u.id=CASE WHEN f.sender_id=? THEN f.receiver_id ELSE f.sender_id END WHERE (f.sender_id=? OR f.receiver_id=?) AND f.status="accepted"',u.id,u.id,u.id)).results;return out({incoming,outgoing,friends})}
-m=p.match(/^\/api\/friends\/([^/]+)\/(send|accept|reject|cancel)$/);if(m&&method==='POST'){const u=await need(req,env),other=m[1],a=m[2];if(other===u.id)throw Error('لا يمكنك إضافة نفسك');if(a==='send'){const existing=await one(env,'SELECT id,sender_id,receiver_id,status FROM friendships WHERE (sender_id=? AND receiver_id=?) OR (sender_id=? AND receiver_id=?)',u.id,other,other,u.id);if(existing){if(existing.status==='accepted')throw Error('أنتم أصدقاء بالفعل');if(existing.status==='pending')throw Error('طلب الصداقة موجود بالفعل');await run(env,'UPDATE friendships SET sender_id=?,receiver_id=?,status="pending",updated_at=? WHERE id=?',u.id,other,now(),existing.id)}else await run(env,'INSERT INTO friendships(id,sender_id,receiver_id,status,created_at,updated_at) VALUES(?,?,?,?,?,?)',id(),u.id,other,'pending',now(),now());await notify(env,other,'friend','لديك طلب صداقة جديد')}else if(a==='accept'){await run(env,'UPDATE friendships SET status="accepted",updated_at=? WHERE sender_id=? AND receiver_id=? AND status="pending"',now(),other,u.id);await notify(env,other,'friend','تم قبول طلب الصداقة')}else if(a==='reject'){await run(env,'UPDATE friendships SET status="rejected",updated_at=? WHERE sender_id=? AND receiver_id=? AND status="pending"',now(),other,u.id)}else await run(env,'UPDATE friendships SET status="cancelled",updated_at=? WHERE sender_id=? AND receiver_id=? AND status="pending"',now(),u.id,other);return out({ok:true})}
-m=p.match(/^\/api\/follow\/([^/]+)$/);if(m&&method==='POST'){const u=await need(req,env),x=await one(env,'SELECT id FROM follows WHERE follower_id=? AND following_id=?',u.id,m[1]);if(x)await run(env,'DELETE FROM follows WHERE id=?',x.id);else {await run(env,'INSERT INTO follows(id,follower_id,following_id,created_at) VALUES(?,?,?,?)',id(),u.id,m[1],now());await notify(env,m[1],'follow',u.name+' بدأ متابعتك')}return out({ok:true})}
-m=p.match(/^\/api\/block\/([^/]+)$/);if(m&&method==='POST'){const u=await need(req,env);await run(env,'INSERT OR IGNORE INTO blocks(id,blocker_id,blocked_id,created_at) VALUES(?,?,?,?)',id(),u.id,m[1],now());return out({ok:true})}
-if(p==='/api/conversations'){const u=await need(req,env);const r=await q(env,'SELECT m.*,a.name sender_name,b.name receiver_name FROM messages m JOIN users a ON a.id=m.sender_id JOIN users b ON b.id=m.receiver_id WHERE m.sender_id=? OR m.receiver_id=? ORDER BY m.created_at DESC LIMIT 100',u.id,u.id);return out({messages:r.results})}if(p==='/api/messages'&&method==='POST'){const u=await need(req,env),b=await req.json(),to=await one(env,'SELECT id FROM users WHERE email=?',String(b.email).toLowerCase());if(!to)throw Error('المستخدم غير موجود');const mid=id();await run(env,'INSERT INTO messages(id,sender_id,receiver_id,text,created_at) VALUES(?,?,?,?,?)',mid,u.id,to.id,String(b.text||'').slice(0,3000),now());await notify(env,to.id,'message','لديك رسالة جديدة من '+u.name);return out({ok:true},201)}
+  try{
+    const data=await api('/api/platforms');
 
-if(p==='/api/upload'&&method==='POST'){const u=await need(req,env);if(!env.MEDIA)throw Error('R2 غير مربوط. اربط Bucket باسم MEDIA لرفع الملفات.');const ct=req.headers.get('content-type')||'';if(!ct.includes('multipart/form-data'))throw Error('أرسل الملف بصيغة multipart/form-data');const form=await req.formData(),file=form.get('file');if(!(file instanceof File))throw Error('الملف مفقود');if(file.size>50*1024*1024)throw Error('الحد الأقصى 50MB');const type=file.type||'application/octet-stream';if(!/^(image\/|video\/)/.test(type))throw Error('يسمح بالصور والفيديو فقط');const key=`${u.id}/${Date.now()}-${crypto.randomUUID()}`;await env.MEDIA.put(key,file.stream(),{httpMetadata:{contentType:type}});return out({ok:true,url:'/media/'+encodeURIComponent(key),type,size:file.size},201)}
-if(p==='/api/stories'&&method==='GET'){const r=await q(env,'SELECT s.*,u.name author_name FROM stories s JOIN users u ON u.id=s.user_id WHERE s.expires_at>? ORDER BY s.created_at DESC',now());return out({stories:r.results})}if(p==='/api/stories'&&method==='POST'){const u=await need(req,env),b=await req.json();await run(env,'INSERT INTO stories(id,user_id,media_url,media_type,expires_at,created_at) VALUES(?,?,?,?,?,?)',id(),u.id,String(b.media_url||'').slice(0,2000),String(b.media_type||'image'),new Date(Date.now()+86400000).toISOString(),now());return out({ok:true})}
-if(p==='/api/reels'&&method==='GET'){const r=await q(env,'SELECT r.*,u.name author_name FROM reels r JOIN users u ON u.id=r.user_id ORDER BY r.created_at DESC LIMIT 100');return out({reels:r.results})}if(p==='/api/reels'&&method==='POST'){const u=await need(req,env),b=await req.json();await run(env,'INSERT INTO reels(id,user_id,video_url,caption,created_at) VALUES(?,?,?,?,?)',id(),u.id,String(b.video_url||'').slice(0,2000),String(b.caption||'').slice(0,1000),now());return out({ok:true})}
-if(p==='/api/market'&&method==='GET'){const r=await q(env,'SELECT p.*,u.name seller_name FROM products p JOIN users u ON u.id=p.seller_id ORDER BY p.created_at DESC LIMIT 100');return out({products:r.results})}if(p==='/api/market'&&method==='POST'){const u=await need(req,env),b=await req.json();await run(env,'INSERT INTO products(id,seller_id,title,description,price,image_url,created_at) VALUES(?,?,?,?,?,?,?)',id(),u.id,String(b.title||'').slice(0,120),String(b.description||'').slice(0,2000),Number(b.price||0),String(b.image_url||'').slice(0,2000),now());return out({ok:true})}
-if(p==='/api/academy'&&method==='GET'){return out({items:(await q(env,'SELECT a.*,u.name author_name FROM academy a JOIN users u ON u.id=a.author_id ORDER BY a.created_at DESC')).results})}if(p==='/api/academy'&&method==='POST'){const u=await need(req,env),b=await req.json();await run(env,'INSERT INTO academy(id,author_id,title,description,url,created_at) VALUES(?,?,?,?,?,?)',id(),u.id,String(b.title||'').slice(0,150),String(b.description||'').slice(0,3000),String(b.url||'').slice(0,2000),now());return out({ok:true})}
-if(p==='/api/services'&&method==='GET'){const u=await me(req,env),services=(await q(env,'SELECT s.*,u.name provider_name FROM services s JOIN users u ON u.id=s.provider_id ORDER BY s.created_at DESC')).results,orders=u?(await q(env,'SELECT o.*,s.title FROM orders o JOIN services s ON s.id=o.service_id WHERE o.buyer_id=? OR o.provider_id=? ORDER BY o.created_at DESC',u.id,u.id)).results:[];return out({services,orders})}if(p==='/api/services'&&method==='POST'){const u=await need(req,env),b=await req.json();await run(env,'INSERT INTO services(id,provider_id,title,description,price,created_at) VALUES(?,?,?,?,?,?)',id(),u.id,String(b.title||'').slice(0,150),String(b.description||'').slice(0,3000),Number(b.price||0),now());return out({ok:true})}if(p==='/api/orders'&&method==='POST'){const u=await need(req,env),b=await req.json(),s=await one(env,'SELECT * FROM services WHERE id=?',b.service_id);if(!s)throw Error('الخدمة غير موجودة');const oid=id();await run(env,'INSERT INTO orders(id,service_id,buyer_id,provider_id,status,note,created_at) VALUES(?,?,?,?,?,?,?)',oid,s.id,u.id,s.provider_id,'pending',String(b.note||'').slice(0,1000),now());await notify(env,s.provider_id,'order','لديك طلب خدمة جديد');return out({ok:true})}
-if(p==='/api/notifications'&&method==='GET'){const u=await need(req,env);const r=await q(env,'SELECT * FROM notifications WHERE user_id=? ORDER BY created_at DESC LIMIT 100',u.id);return out({notifications:r.results})}if(p==='/api/notifications/read'&&method==='POST'){const u=await need(req,env);await run(env,'UPDATE notifications SET read_at=? WHERE user_id=? AND read_at IS NULL',now(),u.id);return out({ok:true})}if(p==='/api/reports'&&method==='POST'){const u=await need(req,env),b=await req.json();if(!b.target_type||!b.target_id||!b.reason)throw Error('أكمل بيانات البلاغ');await run(env,'INSERT INTO reports(id,reporter_id,target_type,target_id,reason,created_at) VALUES(?,?,?,?,?,?)',id(),u.id,String(b.target_type).slice(0,30),String(b.target_id).slice(0,100),String(b.reason).slice(0,1000),now());return out({ok:true},201)}if(p==='/api/orders/status'&&method==='POST'){const u=await need(req,env),b=await req.json(),o=await one(env,'SELECT * FROM orders WHERE id=? AND (buyer_id=? OR provider_id=?)',b.id,u.id,u.id);if(!o)throw Error('الطلب غير موجود');const allowed=['pending','accepted','rejected','completed','cancelled'];if(!allowed.includes(b.status))throw Error('حالة غير صحيحة');await run(env,'UPDATE orders SET status=? WHERE id=?',b.status,o.id);return out({ok:true})}
-if(p==='/api/admin/users'&&method==='GET'){const u=await need(req,env);if(u.role!=='admin')throw Object.assign(Error('غير مصرح'),{status:403});const r=await q(env,'SELECT id,name,email,role,online,created_at FROM users ORDER BY created_at DESC LIMIT 500');return out({users:r.results})}
-m=p.match(/^\/api\/admin\/users\/([^/]+)\/role$/);if(m&&method==='POST'){const u=await need(req,env);if(u.role!=='admin')throw Object.assign(Error('غير مصرح'),{status:403});const b=await req.json();if(!['user','admin'].includes(b.role))throw Error('دور غير صحيح');await run(env,'UPDATE users SET role=? WHERE id=?',b.role,m[1]);return out({ok:true})}
-if(p==='/api/admin'&&method==='GET'){const u=await need(req,env);if(u.role!=='admin')throw Object.assign(Error('غير مصرح'),{status:403});const a=await one(env,'SELECT COUNT(*) n FROM users'),b=await one(env,'SELECT COUNT(*) n FROM posts'),c=await one(env,'SELECT COUNT(*) n FROM orders'),d=await one(env,'SELECT COUNT(*) n FROM reports WHERE status="open"'),r=await q(env,'SELECT r.*,u.name reporter_name FROM reports r JOIN users u ON u.id=r.reporter_id WHERE r.status="open" ORDER BY r.created_at DESC');return out({stats:{users:a.n,posts:b.n,orders:c.n,reports:d.n},reports:r.results})}m=p.match(/^\/api\/admin\/reports\/([^/]+)$/);if(m&&method==='POST'){const u=await need(req,env);if(u.role!=='admin')throw Object.assign(Error('غير مصرح'),{status:403});await run(env,'UPDATE reports SET status="closed" WHERE id=?',m[1]);return out({ok:true})}
-return out({error:'Not found'},404);
-}catch(e){return out({error:e.message||'Server error'},e.status||500)}}
-export default {async fetch(req,env){const u=new URL(req.url);if(u.pathname==='/manifest.json')return new Response(JSON.stringify({name:'XENOR',short_name:'XENOR',start_url:'/',display:'standalone',theme_color:'#f5c400',background_color:'#080808',icons:[{src:'/icon.svg',sizes:'any',type:'image/svg+xml'}]}),{headers:{'content-type':'application/manifest+json'}});if(u.pathname==='/icon.svg')return new Response('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><rect width="512" height="512" rx="96" fill="#080808"/><path d="M110 110L402 402M402 110L110 402" stroke="#f5c400" stroke-width="58" stroke-linecap="round"/></svg>',{headers:{'content-type':'image/svg+xml'}});if(u.pathname.startsWith('/media/')&&env.MEDIA){const key=decodeURIComponent(u.pathname.slice(7));const obj=await env.MEDIA.get(key);if(!obj)return new Response('Not found',{status:404});return new Response(obj.body,{headers:{'content-type':obj.httpMetadata?.contentType||'application/octet-stream','cache-control':'public,max-age=31536000,immutable'}})}if(u.pathname==='/sw.js')return new Response(`self.addEventListener('install',e=>e.waitUntil(caches.open('xenor-v1').then(c=>c.add('/'))));self.addEventListener('fetch',e=>{if(e.request.method==='GET')e.respondWith(caches.match(e.request).then(x=>x||fetch(e.request).then(r=>{let c=r.clone();caches.open('xenor-v1').then(k=>k.put(e.request,c));return r})));});`,{headers:{'content-type':'application/javascript'}});if(u.pathname.startsWith('/api/'))return api(req,env);return new Response(html,{headers:{'content-type':'text/html;charset=UTF-8','cache-control':'no-store'}})}};
+    app.innerHTML=`
+      <div class="card">
+        <h2>🌐 منصات XENOR</h2>
+        <p>تابع XENOR على منصات التواصل</p>
+
+        <div id="platformList"></div>
+      </div>
+    `;
+
+    const list=$('#platformList');
+
+    if(!data.length){
+      list.innerHTML='<p>لا توجد منصات مضافة.</p>';
+      return;
+    }
+
+    list.innerHTML=data
+      .filter(x=>x.enabled)
+      .map(x=>`
+        <a href="${esc(x.url)}"
+           target="_blank"
+           rel="noopener"
+           style="
+             display:block;
+             background:#111;
+             color:#fff;
+             padding:15px;
+             margin:10px 0;
+             border-radius:14px;
+             text-decoration:none;
+             border:1px solid #292929;
+           ">
+          <b style="color:#f5c400">${esc(x.name)}</b>
+          <div style="font-size:13px;color:#aaa;margin-top:5px">
+            ${esc(x.description||'تابعنا على المنصة')}
+          </div>
+        </a>
+      `).join('');
+
+  }catch(e){
+    app.innerHTML=`
+      <div class="card">
+        <h2>خطأ</h2>
+        <p>${esc(e.message)}</p>
+      </div>
+    `;
+  }
+}function esc(v){
+  return String(v??'')
+    .replaceAll('&','&amp;')
+    .replaceAll('<','&lt;')
+    .replaceAll('>','&gt;')
+    .replaceAll('"','&quot;')
+    .replaceAll("'","&#039;");
+}return Response.json({error:'Not found'}
+if(path==='/api/platforms' && req.method==='GET'){
+  await run(env,`
+    CREATE TABLE IF NOT EXISTS platforms(
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL,
+      url TEXT NOT NULL,
+      description TEXT DEFAULT '',
+      enabled INTEGER DEFAULT 1,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+
+  let rows=await q(env,`
+    SELECT * FROM platforms
+    ORDER BY id ASC
+  `);
+
+  if(!rows.length){
+    const defaults=[
+      ['Facebook','https://facebook.com/','صفحة XENOR على Facebook'],
+      ['Instagram','https://instagram.com/','حساب XENOR على Instagram'],
+      ['TikTok','https://tiktok.com/','حساب XENOR على TikTok'],
+      ['LinkedIn','https://linkedin.com/','XENOR على LinkedIn'],
+      ['Pinterest','https://pinterest.com/','XENOR على Pinterest'],
+      ['YouTube','https://youtube.com/','قناة XENOR على YouTube'],
+      ['X','https://x.com/','XENOR على X'],
+      ['WhatsApp','https://wa.me/','تواصل معنا عبر WhatsApp']
+    ];
+
+    for(const p of defaults){
+      await run(env,`
+        INSERT INTO platforms(name,url,description,enabled)
+        VALUES(?,?,?,1)
+      `,...p);
+    }
+
+    rows=await q(env,`SELECT * FROM platforms ORDER BY id ASC`);
+  }
+
+  return Response.json(rows);
+}if(path==='/api/admin/platforms' && req.method==='GET'){
+  const u=await need(req,env);
+
+  if(u.role!=='admin')
+    return Response.json({error:'Admin only'},{status:403});
+
+  await run(env,`
+    CREATE TABLE IF NOT EXISTS platforms(
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL,
+      url TEXT NOT NULL,
+      description TEXT DEFAULT '',
+      enabled INTEGER DEFAULT 1,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+
+  return Response.json(
+    await q(env,`SELECT * FROM platforms ORDER BY id ASC`)
+  );
+}if(path==='/api/admin/platforms' && req.method==='POST'){
+  const u=await need(req,env);
+
+  if(u.role!=='admin')
+    return Response.json({error:'Admin only'},{status:403});
+
+  const b=await req.json();
+
+  if(!b.name || !b.url)
+    return Response.json({error:'name and url required'},{status:400});
+
+  await run(env,`
+    INSERT INTO platforms(name,url,description,enabled)
+    VALUES(?,?,?,?)
+  `,
+    b.name,
+    b.url,
+    b.description||'',
+    b.enabled===false?0:1
+  );
+
+  return Response.json({ok:true});
+}const pm=path.match(/^\/api\/admin\/platforms\/(\d+)$/);
+
+if(pm && req.method==='PUT'){
+  const u=await need(req,env);
+
+  if(u.role!=='admin')
+    return Response.json({error:'Admin only'},{status:403});
+
+  const b=await req.json();
+
+  await run(env,`
+    UPDATE platforms
+    SET name=?,url=?,description=?,enabled=?
+    WHERE id=?
+  `,
+    b.name,
+    b.url,
+    b.description||'',
+    b.enabled?1:0,
+    pm[1]
+  );
+
+  return Response.json({ok:true});
+}
+
+if(pm && req.method==='DELETE'){
+  const u=await need(req,env);
+
+  if(u.role!=='admin')
+    return Response.json({error:'Admin only'},{status:403});
+
+  await run(env,`
+    DELETE FROM platforms WHERE id=?
+  `,pm[1]);
+
+  return Response.json({ok:true});
+}
