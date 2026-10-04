@@ -1,0 +1,27 @@
+XENOR — PRODUCTION DEPLOY CHECKLIST
+
+1) Cloudflare D1
+   - Create database: xenor-social-db
+   - Put its ID in wrangler.toml in database_id.
+   - Run: npx wrangler d1 execute xenor-social-db --remote --file=schema.sql
+
+2) Optional real media uploads
+   - Create R2 bucket: xenor-media
+   - Uncomment the [[r2_buckets]] block in wrangler.toml.
+   - Deploy again.
+
+3) Deploy
+   npx wrangler deploy
+
+4) Verify
+   Open: https://YOUR-WORKER-URL/api/health
+   Expected: {"ok":true,"service":"XENOR","database":true}
+
+5) Create the first account. To make it admin, change that user's role to admin in D1:
+   UPDATE users SET role='admin' WHERE email='YOUR-ADMIN-EMAIL';
+
+6) Production media uploads use POST /api/upload with multipart field: file.
+
+IMPORTANT
+- This package does not contain your Cloudflare account credentials.
+- D1/R2 must be created in your Cloudflare account before production deployment.
