@@ -1,33 +1,590 @@
-const H='content-type';
-const json=(x,s=200)=>new Response(JSON.stringify(x),{status:s,headers:{[H]:'application/json;charset=utf-8','cache-control':'no-store'}});
-const html=(x,s=200)=>new Response(x,{status:s,headers:{[H]:'text/html;charset=utf-8','cache-control':'no-store'}});
-const esc=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
-function pageCSS(){return `<style>*{box-sizing:border-box}body{margin:0;background:#080808;color:#fff;font-family:Arial,sans-serif;direction:rtl}a{text-decoration:none;color:inherit}.wrap{max-width:1100px;margin:auto;padding:24px}.top{position:sticky;top:0;z-index:5;background:#080808ee;border-bottom:1px solid #222;display:flex;align-items:center;justify-content:space-between;padding:14px 24px}.logo{font-size:25px;font-weight:900}.logo span,h1 span,h2 span{color:#f5c400}.nav{display:flex;gap:10px;flex-wrap:wrap}.nav a,.btn,.ghost,.back{border:1px solid #f5c400;border-radius:10px;padding:10px 14px}.btn{background:#f5c400;color:#080808;font-weight:800;cursor:pointer}.ghost,.back{background:#111;color:#fff}.back{position:fixed;left:14px;bottom:14px;z-index:20;cursor:pointer}.hero{min-height:70vh;display:grid;grid-template-columns:1.5fr .7fr;gap:30px;align-items:center}.eyebrow{color:#f5c400;letter-spacing:3px}.hero h1{font-size:clamp(42px,7vw,78px);margin:10px 0}.hero p{font-size:20px;line-height:1.8;color:#bbb}.mark{font-size:220px;font-weight:900;text-align:center;color:#f5c400}.section{padding:55px 0}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px}.card,.panel{background:#111;border:1px solid #252525;border-radius:16px;padding:20px}.card h3{color:#f5c400}.muted{color:#aaa}.contact{display:grid;grid-template-columns:1fr 1fr;gap:20px}.form{display:grid;gap:10px}input,textarea{width:100%;padding:13px;border:1px solid #333;background:#0c0c0c;color:#fff;border-radius:9px}textarea{min-height:120px}.social{display:flex;gap:8px;flex-wrap:wrap}.msg{color:#f5c400;min-height:20px}footer{border-top:1px solid #222;padding:30px;text-align:center;color:#aaa}.adminmain{max-width:1100px;margin:auto;padding:24px}.item{display:flex;justify-content:space-between;gap:12px;align-items:center;border-top:1px solid #292929;padding:12px 0}.danger{background:#1b0a0a;color:#ff8b8b;border:1px solid #552020;border-radius:8px;padding:8px;cursor:pointer}.tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px}.stat{font-size:28px;color:#f5c400;font-weight:900}@media(max-width:700px){.hero,.contact{grid-template-columns:1fr}.mark{font-size:130px}.nav{display:none}.wrap,.adminmain{padding:16px}}</style>`}
-function appShell(active='home'){
-const items=[['home','الرئيسية','/'],['platforms','المنصات','/platforms'],['reels','Reels','/reels'],['market','السوق','/market'],['academy','الأكاديمية','/academy'],['services','الخدمات','/services'],['messages','الرسائل','/messages'],['notifications','الإشعارات','/notifications']];
-return `<nav class="appnav">${items.map(([k,n,u])=>`<a class="${k===active?'active':''}" href="${u}">${n}</a>`).join('')}<a href="/admin">الإدارة</a></nav>`;
+const json = (data, status = 200) => new Response(JSON.stringify(data), {
+  status,
+  headers: {
+    "content-type": "application/json; charset=utf-8",
+    "cache-control": "no-store"
+  }
+});
+
+const html = (body, status = 200) => new Response(body, {
+  status,
+  headers: {
+    "content-type": "text/html; charset=utf-8",
+    "cache-control": "no-store"
+  }
+});
+
+const esc = (value) => String(value ?? "").replace(/[&<>"']/g, (c) => ({
+  "&": "&amp;",
+  "<": "&lt;",
+  ">": "&gt;",
+  '"': "&quot;",
+  "'": "&#39;"
+}[c]));
+
+const products = [
+  {
+    id: 1,
+    title: "تكييف Carrier 1.5 حصان",
+    brand: "Carrier",
+    price: "اطلب السعر",
+    description: "تكييف مناسب للمساحات المتوسطة بأداء قوي."
+  },
+  {
+    id: 2,
+    title: "تكييف Midea 2.25 حصان",
+    brand: "Midea",
+    price: "اطلب السعر",
+    description: "حل عملي للتبريد المنزلي بتصميم عصري."
+  },
+  {
+    id: 3,
+    title: "تكييف LG 2.25 حصان",
+    brand: "LG",
+    price: "اطلب السعر",
+    description: "تكييف LG بأداء قوي ومزايا حديثة."
+  }
+];
+
+const services = [
+  {
+    title: "تركيب التكييف",
+    description: "تركيب احترافي لأجهزة التكييف."
+  },
+  {
+    title: "صيانة",
+    description: "فحص وصيانة وإصلاح أجهزة التكييف."
+  },
+  {
+    title: "شحن فريون",
+    description: "فحص الدائرة وشحن الفريون عند الحاجة."
+  },
+  {
+    title: "تكييف مركزي و VRF",
+    description: "حلول وأنظمة تكييف للمشروعات."
+  }
+];
+
+function api(path) {
+  if (path === "/api/health") {
+    return json({
+      ok: true,
+      service: "XENOR",
+      version: "1.0.0"
+    });
+  }
+
+  if (path === "/api/public") {
+    return json({
+      ok: true,
+      products,
+      services,
+      brands: ["Carrier", "Midea", "LG"]
+    });
+  }
+
+  if (path === "/api/products") {
+    return json({
+      ok: true,
+      products
+    });
+  }
+
+  if (path === "/api/services") {
+    return json({
+      ok: true,
+      services
+    });
+  }
+
+  return null;
 }
-function platformPage(){return `<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#f5c400"><title>XENOR — المنصات</title>${pageCSS()}<style>.appnav{position:sticky;top:0;z-index:10;display:flex;gap:8px;overflow:auto;padding:10px 14px;background:#0b0b0bf2;border-bottom:1px solid #252525}.appnav a{white-space:nowrap;padding:10px 13px;border-radius:10px;color:#bbb}.appnav a.active,.appnav a:hover{background:#f5c400;color:#080808;font-weight:800}.platform{min-height:150px;display:flex;flex-direction:column;justify-content:space-between}.platform .ico{font-size:38px}.search{display:flex;gap:8px;margin:15px 0}.search input{flex:1}.mini{font-size:13px;color:#999}</style></head><body>${appShell('platforms')}<button class="back" onclick="history.length>1?history.back():location.href='/'">← رجوع</button><main class="wrap"><section class="section"><p class="eyebrow">XENOR PLATFORMS</p><h1>منصاتك <span>داخل XENOR</span></h1><p class="muted">الوصول السريع إلى المنصات والخدمات، بدون صفحات وهمية.</p><div class="search"><input id="q" placeholder="ابحث في YouTube"><button class="btn" onclick="yt()">بحث</button></div><div class="grid"><a class="card platform" href="https://www.youtube.com/" target="_blank" rel="noopener"><span class="ico">▶️</span><h3>YouTube</h3><p class="muted">فيديو وبحث مباشر.</p></a><a class="card platform" href="https://www.tiktok.com/" target="_blank" rel="noopener"><span class="ico">🎵</span><h3>TikTok</h3><p class="muted">فيديوهات قصيرة.</p></a><a class="card platform" href="https://www.instagram.com/" target="_blank" rel="noopener"><span class="ico">📸</span><h3>Instagram</h3><p class="muted">صور وفيديو وReels.</p></a><a class="card platform" href="https://www.facebook.com/" target="_blank" rel="noopener"><span class="ico">👥</span><h3>Facebook</h3><p class="muted">صفحات ومجتمعات.</p></a><a class="card platform" href="https://x.com/" target="_blank" rel="noopener"><span class="ico">𝕏</span><h3>X</h3><p class="muted">منشورات وأخبار.</p></a><a class="card platform" href="https://web.telegram.org/" target="_blank" rel="noopener"><span class="ico">✈️</span><h3>Telegram</h3><p class="muted">محادثات وقنوات.</p></a><a class="card platform" href="https://web.whatsapp.com/" target="_blank" rel="noopener"><span class="ico">💬</span><h3>WhatsApp</h3><p class="muted">مراسلة مباشرة.</p></a><a class="card platform" href="/reels"><span class="ico">🎬</span><h3>XENOR Reels</h3><p class="muted">قسم الفيديوهات القصيرة داخل XENOR.</p></a></div><p class="mini">ملاحظة: بعض المنصات تمنع التضمين داخل مواقع خارجية، لذلك يتم فتحها عبر رابطها الرسمي.</p></section></main><script>function yt(){const q=document.getElementById('q').value.trim();location.href=q?'https://www.youtube.com/results?search_query='+encodeURIComponent(q):'https://www.youtube.com/'}</script></body></html>`}
-function sectionPage(title,active,body){return `<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#f5c400"><title>XENOR — ${title}</title>${pageCSS()}<style>.appnav{position:sticky;top:0;z-index:10;display:flex;gap:8px;overflow:auto;padding:10px 14px;background:#0b0b0bf2;border-bottom:1px solid #252525}.appnav a{white-space:nowrap;padding:10px 13px;border-radius:10px;color:#bbb}.appnav a.active,.appnav a:hover{background:#f5c400;color:#080808;font-weight:800}</style></head><body>${appShell(active)}<button class="back" onclick="history.length>1?history.back():location.href='/'">← رجوع</button><main class="wrap"><section class="section"><p class="eyebrow">XENOR APP</p><h1>${title} <span>XENOR</span></h1>${body}</section></main><footer>© 2026 XENOR</footer></body></html>`}
-function home(){return `<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#f5c400"><title>XENOR</title>${pageCSS()}</head><body><header class="top"><a class="logo" href="/">XENOR<span>.</span></a><nav class="nav"><a href="#services">الخدمات</a><a href="#projects">أعمالنا</a><a href="#contact">تواصل معنا</a><a href="/admin">الإدارة</a></nav></header>${appShell('home')}<button class="back" onclick="history.length>1?history.back():location.href='/'">← رجوع</button><main class="wrap"><section class="hero"><div><p class="eyebrow">DIGITAL SOLUTIONS</p><h1>نحوّل فكرتك إلى<br><span>حضور رقمي قوي.</span></h1><p>مواقع احترافية، تطبيقات موبايل، سوشيال ميديا وإعلانات ممولة — كل حلولك الرقمية مع XENOR.</p><a class="btn" href="#contact">ابدأ مشروعك</a></div><div class="mark">X</div></section><section id="services" class="section"><h2>خدمات <span>XENOR</span></h2><div id="servicesGrid" class="grid"><article class="card"><h3>تصميم وتطوير المواقع</h3><p class="muted">مواقع سريعة ومتجاوبة واحترافية.</p></article><article class="card"><h3>تطبيقات الموبايل</h3><p class="muted">تطبيقات Android وتجارب رقمية حديثة.</p></article><article class="card"><h3>السوشيال ميديا</h3><p class="muted">إدارة المحتوى وبناء حضور قوي.</p></article><article class="card"><h3>الإعلانات الممولة</h3><p class="muted">حملات تستهدف عملاءك.</p></article></div></section><section id="projects" class="section"><h2>أعمالنا</h2><div id="projectsGrid" class="grid"><article class="card"><h3>مواقع الشركات</h3><p class="muted">حلول ويب احترافية.</p></article><article class="card"><h3>المتاجر الإلكترونية</h3><p class="muted">تجارب بيع رقمية.</p></article><article class="card"><h3>الحملات الرقمية</h3><p class="muted">تصميم وإعلانات وتسويق.</p></article></div></section><section id="contact" class="section contact"><div><h2>خلينا <span>نبدأ</span></h2><p class="muted">ابعت تفاصيل مشروعك وسنتواصل معك.</p><div id="social" class="social"></div></div><form id="contactForm" class="form"><input name="name" placeholder="الاسم" required><input name="phone" placeholder="رقم الهاتف"><input name="email" type="email" placeholder="البريد الإلكتروني"><textarea name="message" placeholder="تفاصيل المشروع"></textarea><button class="btn">إرسال الطلب</button><div id="msg" class="msg"></div></form></section></main><footer>© 2026 XENOR — حلول رقمية تنمو معك.</footer><script>const e=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));async function load(){try{const r=await fetch('/api/public');const d=await r.json();document.getElementById('servicesGrid').innerHTML=(d.services||[]).map(x=>'<article class="card"><h3>'+e(x.title)+'</h3><p class="muted">'+e(x.description)+'</p></article>').join('')||document.getElementById('servicesGrid').innerHTML;document.getElementById('projectsGrid').innerHTML=(d.projects||[]).map(x=>'<article class="card">'+(x.image?'<img src="'+e(x.image)+'" style="width:100%;border-radius:10px">':'')+'<h3>'+e(x.title)+'</h3><p class="muted">'+e(x.description)+'</p></article>').join('')||document.getElementById('projectsGrid').innerHTML;document.getElementById('social').innerHTML=Object.entries(d.settings||{}).filter(([k,v])=>v).map(([k,v])=>'<a class="ghost" target="_blank" rel="noopener" href="'+e(v)+'">'+e(k)+'</a>').join('')}catch(_){} }document.getElementById('contactForm').onsubmit=async x=>{x.preventDefault();const r=await fetch('/contact',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(Object.fromEntries(new FormData(x.target)))});document.getElementById('msg').textContent=r.ok?'تم استلام طلبك بنجاح.':'حدث خطأ، حاول مرة أخرى.';if(r.ok)x.target.reset()};load();</script></body></html>`}
-function admin(){return `<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>XENOR Admin</title>${pageCSS()}</head><body><button class="back" onclick="history.length>1?history.back():location.href='/'">← رجوع</button><div id="login" class="wrap" style="max-width:480px;padding-top:12vh"><div class="panel"><h1>XENOR<span>.</span> ADMIN</h1><form id="lf" class="form"><input id="u" value="admin" placeholder="اسم المستخدم"><input id="p" type="password" placeholder="كلمة المرور"><button class="btn">دخول</button><div id="lm" class="msg"></div></form></div></div><div id="dash" hidden><header class="top"><a class="logo" href="/">XENOR<span>.</span> ADMIN</a><div><a class="ghost" href="/">الرئيسية</a> <button id="lo" class="ghost">خروج</button></div></header><main class="adminmain"><h1>لوحة التحكم</h1><div id="stats" class="grid"></div><section class="panel"><h2>روابط التواصل</h2><form id="sf" class="form"><input name="facebook" placeholder="Facebook"><input name="instagram" placeholder="Instagram"><input name="tiktok" placeholder="TikTok"><input name="linkedin" placeholder="LinkedIn"><input name="pinterest" placeholder="Pinterest"><input name="whatsapp" placeholder="WhatsApp"><button class="btn">حفظ الروابط</button></form></section><section class="panel"><h2>الخدمات</h2><form id="svf" class="form"><input name="title" required placeholder="اسم الخدمة"><input name="description" required placeholder="الوصف"><button class="btn">إضافة خدمة</button></form><div id="sv"></div></section><section class="panel"><h2>المشاريع</h2><form id="prf" class="form"><input name="title" required placeholder="اسم المشروع"><input name="description" required placeholder="الوصف"><input name="image" placeholder="رابط الصورة"><button class="btn">إضافة مشروع</button></form><div id="pr"></div></section><section class="panel"><h2>طلبات العملاء</h2><div id="ld"></div></section></main></div><script>const $=x=>document.querySelector(x),esc=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));async function api(p,o){const r=await fetch(p,o);if(r.status===401)throw Error('unauthorized');const d=await r.json();if(!r.ok)throw Error(d.error||'خطأ');return d}function dash(){ $('#login').hidden=true;$('#dash').hidden=false}async function load(){const d=await api('/api/public');$('#sf').querySelectorAll('input').forEach(i=>i.value=d.settings[i.name]||'');$('#sv').innerHTML=d.services.map(x=>'<div class="item"><span><b>'+esc(x.title)+'</b><br>'+esc(x.description)+'</span><button class="danger" onclick="del(\'/api/services?id='+x.id+'\')">حذف</button></div>').join('');$('#pr').innerHTML=d.projects.map(x=>'<div class="item"><span><b>'+esc(x.title)+'</b><br>'+esc(x.description)+'</span><button class="danger" onclick="del(\'/api/projects?id='+x.id+'\')">حذف</button></div>').join('');const l=await api('/api/leads');$('#ld').innerHTML=(l.results||[]).map(x=>'<div class="item"><span><b>'+esc(x.name)+'</b><br>'+esc(x.phone)+' '+esc(x.email)+'<br>'+esc(x.message)+'<br><small>'+esc(x.created_at)+'</small></span><button class="danger" onclick="del(\'/api/leads?id='+x.id+'\')">حذف</button></div>').join('')||'<p class="muted">لا توجد طلبات.</p>';$('#stats').innerHTML='<div class="card"><div class="stat">'+d.services.length+'</div>خدمة</div><div class="card"><div class="stat">'+d.projects.length+'</div>مشروع</div><div class="card"><div class="stat">'+(l.results||[]).length+'</div>طلب</div>'}async function del(p){if(confirm('تأكيد الحذف؟')){await api(p,{method:'DELETE'});load()}}$('#lf').onsubmit=async e=>{e.preventDefault();try{await api('/api/login',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({username:$('#u').value,password:$('#p').value})});dash();load()}catch(x){$('#lm').textContent=x.message==='unauthorized'?'بيانات الدخول غير صحيحة':x.message}};$('#lo').onclick=async()=>{await fetch('/api/logout',{method:'POST'});location.reload()};$('#sf').onsubmit=async e=>{e.preventDefault();await api('/api/settings',{method:'PUT',headers:{'content-type':'application/json'},body:JSON.stringify(Object.fromEntries(new FormData(e.target)))});alert('تم الحفظ')};$('#svf').onsubmit=async e=>{e.preventDefault();await api('/api/services',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(Object.fromEntries(new FormData(e.target)))});e.target.reset();load()};$('#prf').onsubmit=async e=>{e.preventDefault();await api('/api/projects',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(Object.fromEntries(new FormData(e.target)))});e.target.reset();load()};api('/api/me').then(()=>{dash();load()}).catch(()=>{});</script></body></html>`}
-async function seed(env){
-await env.DB.prepare("CREATE TABLE IF NOT EXISTS services (id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT NOT NULL, description TEXT NOT NULL, created_at TEXT DEFAULT CURRENT_TIMESTAMP)").run();
-await env.DB.prepare("CREATE TABLE IF NOT EXISTS projects (id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT NOT NULL, description TEXT NOT NULL, image TEXT DEFAULT '', created_at TEXT DEFAULT CURRENT_TIMESTAMP)").run();
-await env.DB.prepare("CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT NOT NULL DEFAULT '')").run();
-await env.DB.prepare("CREATE TABLE IF NOT EXISTS leads (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, phone TEXT DEFAULT '', email TEXT DEFAULT '', message TEXT DEFAULT '', created_at TEXT DEFAULT CURRENT_TIMESTAMP)").run();
-const n=await env.DB.prepare("SELECT COUNT(*) c FROM services").first();
-if(!n||Number(n.c)===0){const rows=[['تصميم وتطوير المواقع','مواقع احترافية سريعة ومتجاوبة.'],['تطبيقات الموبايل','تطبيقات Android وتجارب رقمية حديثة.'],['السوشيال ميديا','إدارة المحتوى وبناء حضور قوي.'],['الإعلانات الممولة','حملات رقمية للوصول إلى العملاء.'],['الهوية والتصميم','هوية بصرية وتصميمات تسويقية.'],['الحلول الرقمية','أتمتة وربط الأدوات والمنصات.']];for(const x of rows){await env.DB.prepare("INSERT INTO services(title,description) VALUES(?,?)").bind(x[0],x[1]).run();}}
-const p=await env.DB.prepare("SELECT COUNT(*) c FROM projects").first();
-if(!p||Number(p.c)===0){const rows=[['مواقع الشركات','مواقع احترافية للشركات والأعمال.'],['المتاجر الإلكترونية','متاجر وتجارب بيع رقمية.'],['الحملات الرقمية','تصميم وإعلانات وتسويق رقمي.']];for(const x of rows){await env.DB.prepare("INSERT INTO projects(title,description) VALUES(?,?)").bind(x[0],x[1]).run();}}
+
+function renderProduct(product) {
+  return (
+    '<article class="card">' +
+      '<div class="product-icon">✕</div>' +
+      '<div>' +
+        '<span class="tag">' + esc(product.brand) + '</span>' +
+        '<h3>' + esc(product.title) + '</h3>' +
+        '<p class="muted">' + esc(product.description) + '</p>' +
+        '<strong>' + esc(product.price) + '</strong>' +
+      '</div>' +
+    '</article>'
+  );
 }
-async function auth(env,request){const c=request.headers.get('Cookie')||'';const m=c.match(/xenor_session=([^;]+)/);return !!m&&m[1]}
-async function api(request,env){const u=new URL(request.url);if(u.pathname==='/api/login'&&request.method==='POST'){const b=await request.json();if(b.username===env.ADMIN_USER&&b.password===env.ADMIN_PASSWORD)return new Response(JSON.stringify({ok:true}),{headers:{'content-type':'application/json','set-cookie':'xenor_session=ok; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=43200'}});return json({error:'بيانات الدخول غير صحيحة'},401)}if(u.pathname==='/api/logout')return new Response('',{status:204,headers:{'set-cookie':'xenor_session=; Path=/; Max-Age=0'}});if(u.pathname==='/api/public'){await seed(env);const [s,p,g]=await Promise.all([env.DB.prepare('SELECT * FROM services ORDER BY id DESC').all(),env.DB.prepare('SELECT * FROM projects ORDER BY id DESC').all(),env.DB.prepare('SELECT key,value FROM settings').all()]);return json({services:s.results,projects:p.results,settings:Object.fromEntries(g.results.map(x=>[x.key,x.value]))})}if(!(await auth(env,request)))return json({error:'غير مصرح'},401);if(u.pathname==='/api/me')return json({ok:true});if(u.pathname==='/api/leads')return request.method==='GET'?json(await env.DB.prepare('SELECT * FROM leads ORDER BY id DESC').all()):(await env.DB.prepare('DELETE FROM leads WHERE id=?').bind(u.searchParams.get('id')).run(),json({ok:true}));if(u.pathname==='/api/settings'&&request.method==='PUT'){const b=await request.json();for(const [k,v] of Object.entries(b))await env.DB.prepare('INSERT INTO settings(key,value) VALUES(?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value').bind(k,String(v||'')).run();return json({ok:true})}if(u.pathname==='/api/services'){if(request.method==='POST'){const b=await request.json();await env.DB.prepare('INSERT INTO services(title,description) VALUES(?,?)').bind(b.title,b.description).run();return json({ok:true})}await env.DB.prepare('DELETE FROM services WHERE id=?').bind(u.searchParams.get('id')).run();return json({ok:true})}if(u.pathname==='/api/projects'){if(request.method==='POST'){const b=await request.json();await env.DB.prepare('INSERT INTO projects(title,description,image) VALUES(?,?,?)').bind(b.title,b.description,b.image||'').run();return json({ok:true})}await env.DB.prepare('DELETE FROM projects WHERE id=?').bind(u.searchParams.get('id')).run();return json({ok:true})}return json({error:'Not found'},404)}
-export default {async fetch(request,env){const u=new URL(request.url);try{await seed(env);if(u.pathname.startsWith('/api/'))return await api(request,env);if(u.pathname==='/contact'&&request.method==='POST'){const b=await request.json();if(!b.name)return json({error:'الاسم مطلوب'},400);await env.DB.prepare('INSERT INTO leads(name,phone,email,message) VALUES(?,?,?,?)').bind(b.name,b.phone||'',b.email||'',b.message||'').run();return json({ok:true})}if(u.pathname==='/platforms')return html(platformPage());
-if(u.pathname==='/reels')return html(sectionPage('Reels','reels','<div class="grid"><article class="card"><h3>🎬 فيديوهات XENOR</h3><p class="muted">قسم جاهز لإضافة الفيديوهات القصيرة من لوحة الإدارة في المرحلة التالية.</p><a class="btn" href="/platforms">استكشف المنصات</a></article></div>'));
-if(u.pathname==='/market')return html(sectionPage('السوق','market','<div class="grid"><article class="card"><h3>🛒 Marketplace</h3><p class="muted">مكان المنتجات والخدمات. البيانات المركزية يمكن إدارتها من D1.</p><a class="btn" href="/admin">إدارة السوق</a></article></div>'));
-if(u.pathname==='/academy')return html(sectionPage('الأكاديمية','academy','<div class="grid"><article class="card"><h3>🎓 XENOR Academy</h3><p class="muted">دروس وكورسات ومحتوى تعليمي.</p><a class="btn" href="/contact#academy">اطلب كورس</a></article></div>'));
-if(u.pathname==='/services')return html(sectionPage('الخدمات','services','<div id="sg" class="grid"><article class="card"><h3>جارٍ التحميل...</h3></article></div><script>fetch('/api/public').then(r=>r.json()).then(d=>sg.innerHTML=d.services.map(x=>`<article class=\"card\"><h3>${x.title}</h3><p class=\"muted\">${x.description}</p></article>`).join(''))</script>'));
-if(u.pathname==='/messages')return html(sectionPage('الرسائل','messages','<div class="card"><h3>💬 الرسائل</h3><p class="muted">واجهة الرسائل جاهزة، وسيتم ربط الحسابات والمحادثات الفورية بقاعدة البيانات في المرحلة التالية.</p><a class="btn" href="/contact">ابدأ محادثة</a></div>'));
-if(u.pathname==='/notifications')return html(sectionPage('الإشعارات','notifications','<div class="card"><h3>🔔 الإشعارات</h3><p class="muted">ستظهر هنا إشعارات الحساب والطلبات والرسائل.</p></div>'));
-if(u.pathname==='/admin'||u.pathname==='/admin.html')return html(admin());return html(home())}catch(e){return json({error:e.message},500)}}};
+
+function renderService(service) {
+  return (
+    '<article class="card">' +
+      '<div class="product-icon">✓</div>' +
+      '<div>' +
+        '<h3>' + esc(service.title) + '</h3>' +
+        '<p class="muted">' + esc(service.description) + '</p>' +
+      '</div>' +
+    '</article>'
+  );
+}
+
+function page() {
+  const productCards = products.map(renderProduct).join("");
+  const serviceCards = services.map(renderService).join("");
+
+  const adminProducts = products.map(function (p) {
+    return (
+      '<div class="admin-row">' +
+        '<span>' + esc(p.title) + '</span>' +
+        '<span class="yellow">' + esc(p.brand) + '</span>' +
+      '</div>'
+    );
+  }).join("");
+
+  return '<!doctype html>' +
+  '<html lang="ar" dir="rtl">' +
+  '<head>' +
+    '<meta charset="utf-8">' +
+    '<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">' +
+    '<meta name="theme-color" content="#f5c400">' +
+    '<meta name="mobile-web-app-capable" content="yes">' +
+    '<meta name="apple-mobile-web-app-capable" content="yes">' +
+    '<title>XENOR</title>' +
+
+    '<style>' +
+      '*{box-sizing:border-box}' +
+      'html,body{margin:0;padding:0;background:#080808;color:#fff;font-family:Arial,sans-serif}' +
+      'body{min-height:100vh}' +
+      'button,input{font:inherit}' +
+      'button{cursor:pointer}' +
+
+      '.top{' +
+        'position:sticky;' +
+        'top:0;' +
+        'z-index:20;' +
+        'background:#080808;' +
+        'border-bottom:1px solid #292929;' +
+        'padding:12px 14px;' +
+        'display:flex;' +
+        'align-items:center;' +
+        'justify-content:space-between' +
+      '}' +
+
+      '.logo{' +
+        'font-size:24px;' +
+        'font-weight:900;' +
+        'color:#f5c400;' +
+        'letter-spacing:1px' +
+      '}' +
+
+      '.top-actions{display:flex;gap:8px}' +
+
+      '.icon-btn,.back{' +
+        'background:#151515;' +
+        'color:#fff;' +
+        'border:1px solid #333;' +
+        'border-radius:12px;' +
+        'padding:9px 12px' +
+      '}' +
+
+      'main{' +
+        'max-width:760px;' +
+        'margin:auto;' +
+        'padding:16px 14px 90px' +
+      '}' +
+
+      '.hero{' +
+        'background:linear-gradient(145deg,#171717,#0b0b0b);' +
+        'border:1px solid #292929;' +
+        'border-radius:22px;' +
+        'padding:24px;' +
+        'margin-bottom:16px' +
+      '}' +
+
+      '.hero h1{margin:0 0 8px;font-size:34px}' +
+      '.yellow{color:#f5c400}' +
+      '.muted{color:#aaa;line-height:1.7}' +
+
+      '.actions{' +
+        'display:flex;' +
+        'gap:9px;' +
+        'flex-wrap:wrap;' +
+        'margin-top:16px' +
+      '}' +
+
+      '.btn{' +
+        'border:0;' +
+        'border-radius:12px;' +
+        'padding:12px 16px;' +
+        'font-weight:800' +
+      '}' +
+
+      '.primary{background:#f5c400;color:#000}' +
+      '.dark{background:#181818;color:#fff;border:1px solid #333}' +
+
+      '.section-title{' +
+        'display:flex;' +
+        'justify-content:space-between;' +
+        'align-items:center;' +
+        'margin:20px 0 10px' +
+      '}' +
+
+      '.section-title h2{margin:0}' +
+      '.grid{display:grid;gap:10px}' +
+
+      '.card{' +
+        'background:#111;' +
+        'border:1px solid #292929;' +
+        'border-radius:17px;' +
+        'padding:15px;' +
+        'display:flex;' +
+        'gap:13px' +
+      '}' +
+
+      '.product-icon{' +
+        'width:55px;' +
+        'height:55px;' +
+        'min-width:55px;' +
+        'border-radius:15px;' +
+        'background:#f5c400;' +
+        'color:#000;' +
+        'display:grid;' +
+        'place-items:center;' +
+        'font-size:25px;' +
+        'font-weight:900' +
+      '}' +
+
+      '.tag{' +
+        'display:inline-block;' +
+        'background:#27220b;' +
+        'color:#f5c400;' +
+        'border:1px solid #5a4a00;' +
+        'padding:4px 8px;' +
+        'border-radius:999px;' +
+        'font-size:12px' +
+      '}' +
+
+      '.card h3{margin:7px 0 5px}' +
+
+      '.nav{' +
+        'position:fixed;' +
+        'bottom:0;' +
+        'left:0;' +
+        'right:0;' +
+        'background:#0c0c0c;' +
+        'border-top:1px solid #292929;' +
+        'display:flex;' +
+        'justify-content:space-around;' +
+        'padding:8px 4px;' +
+        'padding-bottom:calc(8px + env(safe-area-inset-bottom));' +
+        'z-index:30' +
+      '}' +
+
+      '.nav button{' +
+        'background:none;' +
+        'border:0;' +
+        'color:#aaa;' +
+        'font-size:12px;' +
+        'padding:6px' +
+      '}' +
+
+      '.nav button.active{color:#f5c400}' +
+      '.view{display:none}' +
+      '.view.active{display:block}' +
+
+      '.form{display:grid;gap:10px}' +
+
+      '.form input{' +
+        'background:#111;' +
+        'border:1px solid #333;' +
+        'color:#fff;' +
+        'border-radius:12px;' +
+        'padding:13px;' +
+        'outline:none' +
+      '}' +
+
+      '.form input:focus{border-color:#f5c400}' +
+
+      '.notice{' +
+        'background:#181818;' +
+        'border:1px solid #333;' +
+        'border-radius:14px;' +
+        'padding:13px;' +
+        'margin-top:12px' +
+      '}' +
+
+      '.admin-box{' +
+        'border:1px solid #4e4100;' +
+        'background:#161306;' +
+        'border-radius:18px;' +
+        'padding:16px' +
+      '}' +
+
+      '.admin-list{display:grid;gap:8px;margin-top:12px}' +
+
+      '.admin-row{' +
+        'background:#101010;' +
+        'border:1px solid #292929;' +
+        'border-radius:12px;' +
+        'padding:12px;' +
+        'display:flex;' +
+        'justify-content:space-between;' +
+        'gap:10px' +
+      '}' +
+
+      '.hidden{display:none!important}' +
+    '</style>' +
+  '</head>' +
+
+  '<body>' +
+
+    '<header class="top">' +
+      '<button class="back" id="backBtn">‹ رجوع</button>' +
+      '<div class="logo">✕ XENOR</div>' +
+      '<div class="top-actions">' +
+        '<button class="icon-btn" id="adminBtn">الإدارة</button>' +
+      '</div>' +
+    '</header>' +
+
+    '<main>' +
+
+      '<section id="home" class="view active">' +
+        '<div class="hero">' +
+          '<h1>مرحبًا بك في <span class="yellow">XENOR</span></h1>' +
+          '<p class="muted">منصة اجتماعية عربية بتصميم موبايل حديث.</p>' +
+          '<div class="actions">' +
+            '<button class="btn primary" onclick="go(\'feed\')">ابدأ الآن</button>' +
+            '<button class="btn dark" onclick="go(\'products\')">استكشف</button>' +
+          '</div>' +
+        '</div>' +
+
+        '<div class="section-title">' +
+          '<h2>الخدمات</h2>' +
+        '</div>' +
+
+        '<div id="serviceGrid" class="grid">' +
+          serviceCards +
+        '</div>' +
+      '</section>' +
+
+      '<section id="feed" class="view">' +
+        '<div class="hero">' +
+          '<h1>الرئيسية</h1>' +
+          '<p class="muted">آخر المحتوى في XENOR.</p>' +
+          '<div class="notice">🚀 نسخة Cloudflare Worker جاهزة للتشغيل.</div>' +
+        '</div>' +
+      '</section>' +
+
+      '<section id="products" class="view">' +
+        '<div class="section-title">' +
+          '<h2>المنتجات</h2>' +
+        '</div>' +
+        '<div id="productGrid" class="grid">' +
+          productCards +
+        '</div>' +
+      '</section>' +
+
+      '<section id="messages" class="view">' +
+        '<div class="hero">' +
+          '<h1>الرسائل</h1>' +
+          '<p class="muted">قسم الرسائل في XENOR.</p>' +
+        '</div>' +
+      '</section>' +
+
+      '<section id="account" class="view">' +
+        '<div class="hero">' +
+          '<h1>حسابي</h1>' +
+          '<div class="form">' +
+            '<input id="nameInput" placeholder="الاسم">' +
+            '<input id="emailInput" type="email" placeholder="البريد الإلكتروني">' +
+            '<button class="btn primary" onclick="saveAccount()">حفظ</button>' +
+          '</div>' +
+          '<div id="accountMsg" class="notice hidden"></div>' +
+        '</div>' +
+      '</section>' +
+
+      '<section id="admin" class="view">' +
+        '<div class="hero">' +
+          '<h1>إدارة <span class="yellow">XENOR</span></h1>' +
+          '<p class="muted">لوحة الإدارة الأساسية.</p>' +
+
+          '<div class="admin-box">' +
+            '<div class="form">' +
+              '<input id="adminEmail" type="email" placeholder="البريد">' +
+              '<input id="adminPassword" type="password" placeholder="كلمة المرور">' +
+              '<button class="btn primary" onclick="adminLogin()">دخول الإدارة</button>' +
+            '</div>' +
+
+            '<div id="adminMsg" class="notice hidden"></div>' +
+          '</div>' +
+
+          '<div id="adminPanel" class="hidden">' +
+
+            '<div class="section-title">' +
+              '<h2>الإحصائيات</h2>' +
+            '</div>' +
+
+            '<div class="admin-list">' +
+              '<div class="admin-row"><span>المنتجات</span><b>' +
+                products.length +
+              '</b></div>' +
+
+              '<div class="admin-row"><span>الخدمات</span><b>' +
+                services.length +
+              '</b></div>' +
+
+              '<div class="admin-row"><span>العلامات التجارية</span><b>3</b></div>' +
+            '</div>' +
+
+            '<div class="section-title">' +
+              '<h2>المنتجات</h2>' +
+            '</div>' +
+
+            '<div class="admin-list">' +
+              adminProducts +
+            '</div>' +
+
+          '</div>' +
+        '</div>' +
+      '</section>' +
+
+    '</main>' +
+
+    '<nav class="nav">' +
+      '<button data-view="home" class="active">⌂<br>الرئيسية</button>' +
+      '<button data-view="feed">◉<br>المنشورات</button>' +
+      '<button data-view="products">＋<br>المنتجات</button>' +
+      '<button data-view="messages">☏<br>الرسائل</button>' +
+      '<button data-view="account">●<br>حسابي</button>' +
+    '</nav>' +
+
+    '<script>' +
+
+      'const historyStack = [];' +
+
+      'function go(id,push=true){' +
+        'const current=document.querySelector(".view.active");' +
+
+        'if(current && current.id!==id && push){' +
+          'historyStack.push(current.id);' +
+        '}' +
+
+        'document.querySelectorAll(".view").forEach(function(v){' +
+          'v.classList.toggle("active",v.id===id);' +
+        '});' +
+
+        'document.querySelectorAll(".nav button").forEach(function(b){' +
+          'b.classList.toggle("active",b.dataset.view===id);' +
+        '});' +
+
+        'window.scrollTo({top:0,behavior:"smooth"});' +
+      '}' +
+
+      'document.querySelectorAll(".nav button").forEach(function(btn){' +
+        'btn.addEventListener("click",function(){' +
+          'go(btn.dataset.view);' +
+        '});' +
+      '});' +
+
+      'document.getElementById("backBtn").addEventListener("click",function(){' +
+        'if(historyStack.length){' +
+          'go(historyStack.pop(),false);' +
+        '}else{' +
+          'go("home",false);' +
+        '}' +
+      '});' +
+
+      'document.getElementById("adminBtn").addEventListener("click",function(){' +
+        'go("admin");' +
+      '});' +
+
+      'function saveAccount(){' +
+        'const name=document.getElementById("nameInput").value.trim();' +
+        'const email=document.getElementById("emailInput").value.trim();' +
+
+        'localStorage.setItem("xenor_account",JSON.stringify({' +
+          'name:name,' +
+          'email:email' +
+        '}));' +
+
+        'const msg=document.getElementById("accountMsg");' +
+        'msg.textContent="تم حفظ بيانات الحساب على هذا الجهاز."; ' +
+        'msg.classList.remove("hidden");' +
+      '}' +
+
+      'function loadAccount(){' +
+        'try{' +
+          'const a=JSON.parse(localStorage.getItem("xenor_account")||"null");' +
+
+          'if(a){' +
+            'document.getElementById("nameInput").value=a.name||"";' +
+            'document.getElementById("emailInput").value=a.email||"";' +
+          '}' +
+        '}catch(e){}' +
+      '}' +
+
+      'function adminLogin(){' +
+        'const email=document.getElementById("adminEmail").value.trim();' +
+        'const password=document.getElementById("adminPassword").value;' +
+        'const msg=document.getElementById("adminMsg");' +
+
+        'if(email==="admin@xenor.app" && password==="XENOR@2026"){' +
+          'msg.textContent="تم دخول الإدارة."; ' +
+          'msg.classList.remove("hidden");' +
+          'document.getElementById("adminPanel").classList.remove("hidden");' +
+          'localStorage.setItem("xenor_admin","1");' +
+        '}else{' +
+          'msg.textContent="بيانات الإدارة غير صحيحة."; ' +
+          'msg.classList.remove("hidden");' +
+        '}' +
+      '}' +
+
+      'function loadAdmin(){' +
+        'if(localStorage.getItem("xenor_admin")==="1"){' +
+          'document.getElementById("adminPanel").classList.remove("hidden");' +
+        '}' +
+      '}' +
+
+      'loadAccount();' +
+      'loadAdmin();' +
+
+    '<\/script>' +
+
+  '</body>' +
+  '</html>';
+}
+
+export default {
+  async fetch(request) {
+    const url = new URL(request.url);
+    const path = url.pathname;
+
+    const apiResponse = api(path);
+
+    if (apiResponse) {
+      return apiResponse;
+    }
+
+    if (path === "/favicon.ico") {
+      return new Response("", { status: 204 });
+    }
+
+    if (path === "/manifest.json") {
+      return new Response(JSON.stringify({
+        name: "XENOR",
+        short_name: "XENOR",
+        start_url: "/",
+        display: "standalone",
+        background_color: "#080808",
+        theme_color: "#f5c400",
+        lang: "ar",
+        dir: "rtl",
+        icons: []
+      }), {
+        headers: {
+          "content-type": "application/manifest+json; charset=utf-8"
+        }
+      });
+    }
+
+    return html(page());
+  }
+};
