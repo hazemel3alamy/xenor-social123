@@ -1,8 +1,8 @@
-name = "xenor-social123"
+name = "xenor-social125"
 main = "worker.js"
 compatibility_date = "2026-10-04"
 
 [[d1_databases]]
 binding = "DB"
-database_name = "xenor-social123"
-database_id = "5f1f215c-cbcb-42aa-b9f6-06d3706fc83e"
+database_name = "xenor-100"
+database_id = "9acc5ac3-7be6-476c-bd7f-a4dc77b00985"
