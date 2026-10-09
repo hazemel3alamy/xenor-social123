@@ -1,8 +1,8 @@
-name = "xenor-100"
+name = "xenor-ap"
 main = "worker.js"
 compatibility_date = "2026-10-04"
 
 [[d1_databases]]
 binding = "DB"
-database_name = "xenor-100"
-database_id = "9acc5ac3-7be6-476c-bd7f-a4dc77b00985"
+database_name = "xenor-app"
+database_id = "5e26a65d-6f79-493a-8bc9-1760c1b17ffd"
